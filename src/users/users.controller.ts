@@ -1,0 +1,64 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Patch,
+  Query,
+  Body,
+  Param,
+  UseGuards,
+  NotFoundException,
+} from '@nestjs/common';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
+
+@Controller('users')
+@UseGuards(JwtAuthGuard) // Protect all user routes
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @UseGuards(AdminGuard)
+  @Get()
+  async findAllUsers() {
+    return this.usersService.findAllUsers();
+  }
+
+  @Get()
+  async findUserByEmail(@Param('email') email: string) {
+    const user = await this.usersService.findUserByMail(email);
+    if (!user) {
+      throw new NotFoundException(`No user with email of ${email} found.`);
+    }
+    return user;
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('/:id')
+  findUserById(@Param('id') id: string) {
+    return this.usersService.findUserById(id);
+  }
+
+  @Post('/create')
+  createUser(@Body() body: CreateUserDto) {
+    return this.usersService.create({
+      email: body.email,
+      password: body.password,
+      admin: body.admin,
+    });
+  }
+
+  @Patch('/:id')
+  updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
+    return this.usersService.updateUser(id, body);
+  }
+
+  @UseGuards(AdminGuard)
+  @Delete('/:id')
+  deleteUser(@Param('id') id: string) {
+    return this.usersService.deleteUser(id);
+  }
+}

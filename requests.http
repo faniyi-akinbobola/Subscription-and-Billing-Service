@@ -1,0 +1,553 @@
+# Subscription Service API Testing
+# Base URL for local development
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+# Variables for testing
+@testEmail = testing002@example.com
+@testPassword = password123
+@testUserId = 9d83d261-1481-4369-a10a-e6fede7195ff
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YWQ1ODdkMC03MjMwLTQ1ZmMtYWM1OS1iMTQ4MmI1MTY3MjUiLCJlbWFpbCI6InRlc3RpbmcwMDJAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjAsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjE0MzQ5MTgsImV4cCI6MTc2MTUyMTMxOH0.aoUNOlDkOSd2_mIzlKJEnJtAXXxisRzltGeeIxW0Eto
+
+### ============================================
+### AUTH MODULE TESTS
+### ============================================
+
+### 1. Sign Up - Create a regular user account
+# Note: Auth signup only creates regular users (admin: false by default)
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}"
+}
+
+### 2. Sign In - Login with existing account
+# @name signin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}"
+}
+
+### 3. Get Profile (Protected Route)
+# Note: Replace YOUR_JWT_TOKEN with actual token from signin response
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNzkwODRkMS1lYzhhLTQ3MGYtODY4Yi0xOTc0OTQyZjU5YTkiLCJlbWFpbCI6InRlc3QwMUBleGFtcGxlLmNvbSIsInRva2VuVmVyc2lvbiI6MCwiaWF0IjoxNzYxNDI5NTU2LCJleHAiOjE3NjE1MTU5NTZ9.qa4VQFs0pvnd8T7R8SnBn5sQPFuOfJf5iDBQ_SOj5vw
+
+### 4. Sign Out (Protected Route)
+# Note: Use token from signin response above
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### SIMPLE ADMIN SIGNUP 🎉
+### ============================================
+
+### Create Admin User - ONE STEP!
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@example.com",
+    "password": "adminpass123",
+    "admin": true
+}
+
+### Sign in as Admin
+# @name adminSignin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@example.com", 
+    "password": "adminpass123"
+}
+
+### Admin Sign Out
+# Use admin token from above signin
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer {{jwtToken}}
+
+### Verify Admin Token Invalidation
+# This should fail after signout (401 Unauthorized)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### SIGNOUT TESTING WORKFLOW
+### ============================================
+
+### Create Test User for Signout Testing
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "signouttest@example.com",
+    "password": "signoutpass123"
+}
+
+### Sign In Test User
+# @name signoutUserSignin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "signouttest@example.com",
+    "password": "signoutpass123"
+}
+
+### Test Protected Route Before Signout (Should Work)
+# Use token from signoutUserSignin response
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer TOKEN_FROM_SIGNIN_RESPONSE
+
+### User Sign Out
+# This invalidates the JWT token
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer TOKEN_FROM_SIGNIN_RESPONSE
+
+### Test Protected Route After Signout (Should Fail)
+# This should return 401 Unauthorized
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer TOKEN_FROM_SIGNIN_RESPONSE
+
+### Create Admin Test User for Admin Signout Testing
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "adminsignouttest@example.com",
+    "password": "adminsignoutpass123",
+    "admin": true
+}
+
+### Sign In Admin Test User
+# @name adminSignoutSignin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "adminsignouttest@example.com",
+    "password": "adminsignoutpass123"
+}
+
+### Test Admin Route Before Signout (Should Work)
+# Use token from adminSignoutSignin response
+GET {{baseUrl}}/users
+Authorization: Bearer ADMIN_TOKEN_FROM_SIGNIN
+
+### Admin User Sign Out
+# This invalidates the admin JWT token
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer ADMIN_TOKEN_FROM_SIGNIN
+
+### Test Admin Route After Signout (Should Fail)
+# This should return 401 Unauthorized
+GET {{baseUrl}}/users
+Authorization: Bearer ADMIN_TOKEN_FROM_SIGNIN
+
+### ============================================
+### USERS MODULE TESTS (All Protected Routes)
+### ============================================
+
+### 5. Get All Users (Admin Only)
+# Note: This requires admin privileges after latest migration
+GET {{baseUrl}}/users
+Authorization: Bearer {{jwtToken}}
+
+### 6. Get User by Email (Specific Route)
+# Note: Updated route structure after migration
+GET {{baseUrl}}/users/email/{{testEmail}}
+Authorization: Bearer {{jwtToken}}
+
+### 7. Get User by ID (Admin Only)
+# Note: This requires admin privileges after latest migration
+GET {{baseUrl}}/users/{{testUserId}}
+Authorization: Bearer {{jwtToken}}
+
+### 8. Create Regular User (Default admin: false)
+# Note: Admin field added in latest migration
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "newuser@example.com",
+    "password": "userpassword123"
+}
+
+### 8a. Create Admin User
+# Note: Explicitly set admin: true (new feature from migration)
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "superadmin@example.com",
+    "password": "superadminpassword123",
+    "admin": true
+}
+
+### 8b. Create Regular User (Explicit admin: false)
+# Note: Admin column now available in database
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "regularuser@example.com",
+    "password": "regularpassword123",
+    "admin": false
+}
+
+### 9. Update User Email
+PATCH {{baseUrl}}/users/{{testUserId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "updated@example.com"
+}
+
+### 9a. Promote User to Admin (New Feature)
+# Note: Admin column added in latest migration
+PATCH {{baseUrl}}/users/{{testUserId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "admin": true
+}
+
+### 9b. Demote Admin to Regular User (New Feature)
+# Note: Admin privileges can now be revoked
+PATCH {{baseUrl}}/users/{{testUserId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "admin": false
+}
+
+### 9c. Update Multiple Fields Including Admin Status
+# Note: Can update email and admin status together
+PATCH {{baseUrl}}/users/{{testUserId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "newadmin@example.com",
+    "admin": true
+}
+
+### 10. Delete User (Admin Only)
+# Note: This requires admin privileges after latest migration
+DELETE {{baseUrl}}/users/{{testUserId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### TESTING WORKFLOW
+### ============================================
+
+### Step 1: Sign up a new user
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "workflow@example.com",
+    "password": "workflow123"
+}
+
+### Step 2: Sign in to get JWT token
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "workflow@example.com",
+    "password": "workflow123"
+}
+
+### Step 3: Use the token from Step 2 response in subsequent requests
+# Copy the "access_token" from the signin response and replace TOKEN_HERE
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer TOKEN_HERE
+
+### Step 4: Create an admin user for testing admin routes
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer TOKEN_HERE
+
+{
+    "email": "workflowadmin@example.com",
+    "password": "adminworkflow123",
+    "admin": true
+}
+
+### Step 5: Sign in as admin to get admin token
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "workflowadmin@example.com",
+    "password": "adminworkflow123"
+}
+
+### Step 6: Test admin-only routes with admin token
+# Use admin token from Step 5
+GET {{baseUrl}}/users
+Authorization: Bearer ADMIN_TOKEN_HERE
+
+### ============================================
+### ERROR TESTING
+### ============================================
+
+### Test invalid signup - weak password
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "weak@example.com",
+    "password": "123"
+}
+
+### Test invalid signup - invalid email
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "not-an-email",
+    "password": "password123"
+}
+
+### Test invalid signin - wrong credentials
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "wrong@example.com",
+    "password": "wrongpassword"
+}
+
+### Test protected route without token
+GET {{baseUrl}}/auth/profile
+
+### Test protected route with invalid token
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer invalid_token_here
+
+### ============================================
+### ADMIN FUNCTIONALITY TESTS (Latest Migration)
+### ============================================
+
+### Test Admin Guard - Create Admin User First
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "testadmin@example.com",
+    "password": "adminpass123",
+    "admin": true
+}
+
+### Test Admin Guard - Try Admin-Only Route with Regular User
+# This should fail if current user is not admin
+GET {{baseUrl}}/users
+Authorization: Bearer {{jwtToken}}
+
+### Test Admin Guard - Try Admin-Only Route with Admin User
+# Sign in as admin user first, then use that token
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "testadmin@example.com",
+    "password": "adminpass123"
+}
+
+### Test Token Version Functionality
+# After signout, old tokens should be invalidated
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer {{jwtToken}}
+
+### Try using old token (should fail with 401)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{jwtToken}}
+
+### Try admin route with old token (should fail with 401)
+GET {{baseUrl}}/users
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### USER ENTITY STRUCTURE TESTS (Post Migration)
+### ============================================
+
+### Verify User Response Includes Admin Field
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{jwtToken}}
+
+### Expected Response Structure:
+# {
+#   "id": "uuid",
+#   "email": "user@example.com",
+#   "admin": false,
+#   "tokenVersion": 0,
+#   "createdAt": "timestamp",
+#   "updatedAt": "timestamp"
+# }
+
+### ============================================
+### ADDITIONAL TESTING SCENARIOS
+### ============================================
+
+### Test duplicate signup (should fail)
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}"
+}
+
+### Test user creation with missing fields
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "incomplete@example.com"
+}
+
+### Test user update with invalid data
+PATCH {{baseUrl}}/users/invalid-uuid-format
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "not-an-email-format"
+}
+
+### Test admin field validation
+POST {{baseUrl}}/users/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "invalidadmin@example.com",
+    "password": "password123",
+    "admin": "not-a-boolean"
+}
+
+### ============================================
+### COMPREHENSIVE SIGNOUT TESTS
+### ============================================
+
+### Multiple User Signout Test
+# Create User 1
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "user1@signout.test",
+    "password": "password123"
+}
+
+### Create User 2  
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "user2@signout.test", 
+    "password": "password123"
+}
+
+### Sign in User 1
+# @name user1Signin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "user1@signout.test",
+    "password": "password123"
+}
+
+### Sign in User 2
+# @name user2Signin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "user2@signout.test",
+    "password": "password123"
+}
+
+### User 1 Profile Check (Should Work)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer USER1_TOKEN_HERE
+
+### User 2 Profile Check (Should Work)  
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer USER2_TOKEN_HERE
+
+### User 1 Signs Out
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer USER1_TOKEN_HERE
+
+### User 1 Profile Check After Signout (Should Fail)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer USER1_TOKEN_HERE
+
+### User 2 Profile Check (Should Still Work)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer USER2_TOKEN_HERE
+
+### User 2 Signs Out
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer USER2_TOKEN_HERE
+
+### User 2 Profile Check After Signout (Should Fail)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer USER2_TOKEN_HERE
+
+### ============================================
+### SIGNOUT ERROR SCENARIOS
+### ============================================
+
+### Test Signout Without Token (Should Fail)
+POST {{baseUrl}}/auth/signout
+
+### Test Signout With Invalid Token (Should Fail)
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer invalid.jwt.token
+
+### Test Double Signout (Should Fail on Second Attempt)
+# First create and signin a user
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "doublesignout@test.com",
+    "password": "password123"
+}
+
+### Sign in for double signout test
+# @name doubleSignoutSignin
+POST {{baseUrl}}/auth/signin  
+Content-Type: {{contentType}}
+
+{
+    "email": "doublesignout@test.com",
+    "password": "password123"
+}
+
+### First Signout (Should Work)
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer DOUBLE_SIGNOUT_TOKEN_HERE
+
+### Second Signout With Same Token (Should Fail)
+POST {{baseUrl}}/auth/signout
+Authorization: Bearer DOUBLE_SIGNOUT_TOKEN_HERE

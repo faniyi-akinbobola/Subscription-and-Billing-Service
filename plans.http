@@ -1,0 +1,255 @@
+# Plans Module API Testing
+# Base URL for local development
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+# Test variables
+@testPlanName = Basic Plan
+@testPlanId = bbf41d1b-fd80-48a8-bf7e-03e7504181c2
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YWQ1ODdkMC03MjMwLTQ1ZmMtYWM1OS1iMTQ4MmI1MTY3MjUiLCJlbWFpbCI6InRlc3RpbmcwMDJAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjAsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjE0MzQ5MTgsImV4cCI6MTc2MTUyMTMxOH0.aoUNOlDkOSd2_mIzlKJEnJtAXXxisRzltGeeIxW0Eto
+### ============================================
+### PLANS MODULE TESTS
+### ============================================
+
+### 1. Create a Plan
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "{{testPlanName}}",
+    "description": "A basic subscription plan with limited features",
+    "price": 9.99,
+    "isActive": true
+}
+
+### 2. Create Premium Plan
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Premium Plan",
+    "description": "A premium subscription plan with all features",
+    "price": 29.99,
+    "isActive": true
+}
+
+### 3. Create Inactive Plan
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Enterprise Plan",
+    "description": "An enterprise subscription plan for large organizations",
+    "price": 99.99,
+    "isActive": false
+}
+
+### 4. Get All Plans
+GET {{baseUrl}}/plans
+Authorization: Bearer {{jwtToken}}
+
+### 5. Get Plan by Name
+GET {{baseUrl}}/plans/name?name={{testPlanName}}
+Authorization: Bearer {{jwtToken}}
+
+### 6. Get Plan by ID
+# Note: Replace PLAN_ID with actual ID from create response
+GET {{baseUrl}}/plans/{{testPlanId}}
+Authorization: Bearer {{jwtToken}}
+
+### 7. Update Plan
+PATCH {{baseUrl}}/plans/{{testPlanId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "price": 19.99,
+    "description": "Updated description for basic plan"
+}
+
+### 8. Deactivate Plan (Redundant Method)
+PATCH {{baseUrl}}/plans/{{testPlanId}}/deactivate
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "isActive": false
+}
+
+### 9. Activate Plan (Redundant Method)
+PATCH {{baseUrl}}/plans/{{testPlanId}}/activate
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "isActive": true
+}
+
+### 10. Update Plan Status (Better Approach)
+PATCH {{baseUrl}}/plans/{{testPlanId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "isActive": false
+}
+
+### 11. Delete Plan
+DELETE {{baseUrl}}/plans/{{testPlanId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### ERROR TESTING
+### ============================================
+
+### Test duplicate plan creation
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "{{testPlanName}}",
+    "description": "Duplicate plan test",
+    "price": 15.99,
+    "isActive": true
+}
+
+### Test invalid plan creation - missing required fields
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Incomplete Plan"
+}
+
+### Test invalid plan creation - wrong data types
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Invalid Plan",
+    "description": "Test invalid data",
+    "price": "not-a-number",
+    "isActive": "not-a-boolean"
+}
+
+### Test get non-existent plan by ID
+GET {{baseUrl}}/plans/non-existent-id
+Authorization: Bearer {{jwtToken}}
+
+### Test get non-existent plan by name
+GET {{baseUrl}}/plans/name?name=NonExistentPlan
+Authorization: Bearer {{jwtToken}}
+
+### Test unauthorized access (no token)
+GET {{baseUrl}}/plans
+
+### Test with invalid token
+GET {{baseUrl}}/plans
+Authorization: Bearer invalid_token_here
+
+### ============================================
+### BUSINESS LOGIC TESTING
+### ============================================
+
+### Test creating multiple plans with different prices
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Starter Plan",
+    "description": "Perfect for individuals",
+    "price": 5.99,
+    "isActive": true
+}
+
+###
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Professional Plan",
+    "description": "For small teams",
+    "price": 19.99,
+    "isActive": true
+}
+
+###
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Team Plan",
+    "description": "For large teams",
+    "price": 49.99,
+    "isActive": true
+}
+
+### Test updating all plan fields
+PATCH {{baseUrl}}/plans/{{testPlanId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Updated Basic Plan",
+    "description": "Updated description with more details",
+    "price": 12.99,
+    "isActive": true
+}
+
+### ============================================
+### WORKFLOW TESTING
+### ============================================
+
+### Step 1: Create a plan
+# @name createPlan
+POST {{baseUrl}}/plans/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "name": "Workflow Test Plan",
+    "description": "Plan created for workflow testing",
+    "price": 25.99,
+    "isActive": true
+}
+
+### Step 2: Get the created plan by name
+GET {{baseUrl}}/plans/name?name=Workflow Test Plan
+Authorization: Bearer {{jwtToken}}
+
+### Step 3: Update the plan
+# Use ID from Step 1 response
+PATCH {{baseUrl}}/plans/PLAN_ID_FROM_STEP_1
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "price": 35.99,
+    "description": "Updated workflow test plan"
+}
+
+### Step 4: Deactivate the plan
+PATCH {{baseUrl}}/plans/PLAN_ID_FROM_STEP_1
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "isActive": false
+}
+
+### Step 5: Verify the plan is deactivated
+GET {{baseUrl}}/plans/PLAN_ID_FROM_STEP_1
+Authorization: Bearer {{jwtToken}}
+
+### Step 6: Clean up - Delete the test plan
+DELETE {{baseUrl}}/plans/PLAN_ID_FROM_STEP_1
+Authorization: Bearer {{jwtToken}}
