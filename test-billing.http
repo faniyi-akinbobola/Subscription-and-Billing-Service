@@ -1,0 +1,185 @@
+### 🧪 Comprehensive Billing System Test
+### Testing all billing endpoints with proper error handling
+
+# Variables - Update these with fresh tokens and IDs
+@baseUrl = http://localhost:3000
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5NDEyOGU2MS0xMTMwLTQyZjAtOTg2ZS0xNDI5MGI2MGZjNjkiLCJlbWFpbCI6InRlc3QxQGV4YW1wbGUuY29tIiwidG9rZW5WZXJzaW9uIjowLCJpc0FkbWluIjpmYWxzZSwiaWF0IjoxNzMxMjgxMzQ5LCJleHAiOjE3MzEzNjc3NDl9.Iw1_5dYhZHdx3-1RwDaG4wGbXfr0rQ9YKNzfOAr0y8Q
+
+# Test Customer IDs from your Stripe account
+@testCustomerId = cus_TOr844OZQD0sPO
+@activeCustomerId = cus_TOrKjcLjzMk6Ku
+
+###############################################################################
+# 🎯 STEP 1: Get Fresh Authentication Token
+###############################################################################
+
+### Get fresh JWT token
+# @name signin
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+    "email": "test1@example.com",
+    "password": "password123"
+}
+
+### ⚠️ Copy the access_token from above response and update @jwtToken variable
+
+###############################################################################
+# 📊 STEP 2: Test Billing History Routes
+###############################################################################
+
+### Test 1: Get billing history for existing customer
+GET {{baseUrl}}/billings/history/{{testCustomerId}}
+Authorization: Bearer {{jwtToken}}
+
+### Test 2: Get billing history for active customer (with trial subscription)
+GET {{baseUrl}}/billings/history/{{activeCustomerId}}
+Authorization: Bearer {{jwtToken}}
+
+### Test 3: Test with invalid customer ID (should return empty or error)
+GET {{baseUrl}}/billings/history/cus_invalid_id
+Authorization: Bearer {{jwtToken}}
+
+### Test 4: Test without authentication (should fail with 401)
+GET {{baseUrl}}/billings/history/{{testCustomerId}}
+
+###############################################################################
+# 📧 STEP 3: Test Email Endpoints (Note: Will fail if email not configured)
+###############################################################################
+
+### Test 5: Receipt Email - Minimal Data
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "test.receipt@example.com",
+    "name": "Test User"
+}
+
+### Test 6: Receipt Email - Full Data Set
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "full.test@example.com",
+    "name": "John Doe Premium User",
+    "invoiceNumber": "INV-2024-001",
+    "amount": 4999,
+    "currency": "usd",
+    "planName": "Enterprise Monthly Plan",
+    "pdfUrl": "https://example.com/invoice.pdf"
+}
+
+### Test 7: Renewal Reminder - Minimal Data
+POST {{baseUrl}}/billings/test/renewal-reminder
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "renewal.test@example.com"
+}
+
+### Test 8: Renewal Reminder - Full Data Set
+POST {{baseUrl}}/billings/test/renewal-reminder
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "premium.renewal@example.com",
+    "name": "Jane Smith",
+    "planName": "Enterprise Annual Plan",
+    "amount": 59988,
+    "currency": "usd",
+    "subscriptionId": "sub_1SS3cEK94x7YK47vIsM2x7Gd"
+}
+
+###############################################################################
+# � STEP 4: Error Handling Tests
+###############################################################################
+
+### Test 9: Invalid email format
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "invalid-email-format",
+    "name": "Test User",
+    "amount": "not-a-number"
+}
+
+### Test 10: Missing required authentication
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "name": "Unauthorized User"
+}
+
+### Test 11: Invalid JWT token
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer invalid_token_here
+
+{
+    "email": "test@example.com",
+    "name": "Invalid Token User"
+}
+
+### Test 12: Empty request body
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{}
+
+###############################################################################
+# � STEP 5: Integration Tests with Real Stripe Data
+###############################################################################
+
+### Test 13: Billing history with real Stripe customer that has transactions
+GET {{baseUrl}}/billings/history/{{activeCustomerId}}
+Authorization: Bearer {{jwtToken}}
+
+### Test 14: Check application health for billing module
+GET {{baseUrl}}/
+Authorization: Bearer {{jwtToken}}
+
+###############################################################################
+# 📝 TESTING NOTES & EXPECTED RESULTS
+###############################################################################
+
+### ✅ Expected Successes:
+### - Tests 1, 2: Should return billing history (may be empty for new customers)
+### - Test 14: Should return app health status
+### - Tests 5-8: Will fail due to email config, but should show proper error handling
+
+### ❌ Expected Failures:
+### - Test 3: Invalid customer ID
+### - Test 4: No authentication (401)
+### - Tests 5-8: Email configuration missing (500 with EAUTH error)
+### - Test 9: Invalid data format
+### - Tests 10-11: Authentication failures (401)
+
+### 🔧 Email Configuration Fix:
+### To make email tests work, add to your .env file:
+### EMAIL_HOST=smtp.gmail.com
+### EMAIL_PORT=587
+### EMAIL_USER=your-email@gmail.com  
+### EMAIL_PASS=your-app-specific-password
+### EMAIL_FROM=your-email@gmail.com
+
+###############################################################################
+# 🚀 QUICK TEST SUMMARY
+###############################################################################
+
+### Run these in order for comprehensive testing:
+### 1. Get fresh token (signin request above)
+### 2. Update @jwtToken variable with new token
+### 3. Test billing history (Tests 1-2)
+### 4. Test error handling (Tests 4, 10-11)
+### 5. Check email endpoint structure (Tests 5-6) - expect email config errors

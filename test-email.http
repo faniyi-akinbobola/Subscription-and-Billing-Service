@@ -1,0 +1,54 @@
+### Email Testing Workflow
+### Prerequisites: Make sure the application is running (docker-compose up -d)
+
+### 1. Create a test user
+POST http://localhost:3000/auth/signup
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "testpass123",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### 2. Sign in to get JWT token
+POST http://localhost:3000/auth/signin
+Content-Type: application/json
+
+{
+  "email": "testuser2@example.com",
+  "password": "testpass123"
+}
+
+# Copy the "access_token" from the response above and use it in the Authorization headers below
+
+### 3. Test receipt email
+# Replace YOUR_JWT_TOKEN with the actual token from step 2
+POST http://localhost:3000/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN
+
+{
+  "email": "akinbobolafaniyi@gmail.com",
+  "name": "Test Customer",
+  "invoiceNumber": "TEST-001",
+  "amount": 2999,
+  "currency": "usd",
+  "planName": "Premium Monthly Plan"
+}
+
+### 4. Test renewal reminder email
+# Replace YOUR_JWT_TOKEN with the actual token from step 2
+POST http://localhost:3000/billings/test/renewal-reminder
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN
+
+{
+  "email": "akinbobolafaniyi@gmail.com",
+  "name": "Test Customer",
+  "planName": "Premium Monthly Plan",
+  "amount": 2999,
+  "currency": "usd",
+  "subscriptionId": "sub_test_123"
+}

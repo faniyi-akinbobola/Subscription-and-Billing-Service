@@ -1,0 +1,201 @@
+### Billing Module Tests
+### Test the billing functionality with email notifications
+
+### Variables
+@baseUrl = http://localhost:3000
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoidGVzdHVzZXIiLCJpYXQiOjE3MzYwMjM5NDQsImV4cCI6MTczNjExMDM0NH0.xO9uFdGrPTeBLOeK6zxvq6a6T2rjEf-2_ZI_OZ2Ag8k
+
+### 1. Test successful payment with receipt email
+### First, create a payment intent and confirm it to trigger the webhook
+POST {{baseUrl}}/payments/create-payment-intent
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "amount": 2999,
+  "currency": "usd",
+  "customerId": "cus_TOe08WknF9Gv9N",
+  "description": "Test payment for billing email"
+}
+
+### 2. Create a subscription to test renewal reminders
+POST {{baseUrl}}/payments/create-subscription
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "customerId": "cus_TOe08WknF9Gv9N",
+  "priceId": "price_1SRqSWK94x7YK47vEEfO1Fya",
+  "paymentMethodId": "pm_card_visa"
+}
+
+### 3. Test webhook for successful invoice payment
+### This would normally be called by Stripe, but we can simulate it for testing
+POST {{baseUrl}}/payments/webhooks
+Content-Type: application/json
+Stripe-Signature: test_signature
+
+{
+  "id": "evt_test_webhook",
+  "object": "event",
+  "api_version": "2023-08-16",
+  "created": 1234567890,
+  "data": {
+    "object": {
+      "id": "in_test_invoice",
+      "object": "invoice",
+      "amount_paid": 2999,
+      "currency": "usd",
+      "customer": {
+        "id": "cus_TOe08WknF9Gv9N",
+        "email": "john.doe@example.com",
+        "name": "John Doe"
+      },
+      "number": "TEST-001",
+      "status": "paid",
+      "period_start": 1736000000,
+      "period_end": 1738678400,
+      "status_transitions": {
+        "paid_at": 1736023944
+      },
+      "lines": {
+        "data": [
+          {
+            "price": {
+              "id": "price_1SRqSWK94x7YK47vEEfO1Fya",
+              "nickname": "Premium Monthly Plan"
+            },
+            "description": "Premium Monthly Subscription"
+          }
+        ]
+      },
+      "subscription": {
+        "id": "sub_1SRqtgK94x7YK47vqYLCKr6c"
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "invoice.payment_succeeded"
+}
+
+### 4. Test webhook for failed invoice payment
+POST {{baseUrl}}/payments/webhooks
+Content-Type: application/json
+Stripe-Signature: test_signature
+
+{
+  "id": "evt_test_webhook_failed",
+  "object": "event",
+  "api_version": "2023-08-16",
+  "created": 1234567890,
+  "data": {
+    "object": {
+      "id": "in_test_invoice_failed",
+      "object": "invoice",
+      "amount_due": 2999,
+      "currency": "usd",
+      "customer": {
+        "id": "cus_TOe08WknF9Gv9N",
+        "email": "john.doe@example.com",
+        "name": "John Doe"
+      },
+      "status": "open",
+      "attempt_count": 2,
+      "lines": {
+        "data": [
+          {
+            "price": {
+              "id": "price_1SRqSWK94x7YK47vEEfO1Fya",
+              "nickname": "Premium Monthly Plan"
+            },
+            "description": "Premium Monthly Subscription"
+          }
+        ]
+      },
+      "subscription": {
+        "id": "sub_1SRqtgK94x7YK47vqYLCKr6c"
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "invoice.payment_failed"
+}
+
+### 5. Test billing history endpoint (if implemented)
+GET {{baseUrl}}/billings/history/cus_TOe08WknF9Gv9N
+Authorization: Bearer {{authToken}}
+
+### 6. Test renewal reminder functionality
+### This would normally be triggered by cron job, but we can test manually
+### You would need to add a test endpoint to BillingsController for this
+
+### 7. Test email service directly (if needed)
+### Create a test endpoint in BillingsController to test email sending
+
+###############################################
+### Manual Testing Instructions:
+###
+### 1. Setup Email Configuration:
+###    - Update .env with your email credentials
+###    - For Gmail: Use app password, not regular password
+###    - Enable 2FA and generate app password
+###
+### 2. Build and start the application:
+###    docker-compose up --build
+###
+### 3. Test the webhooks above to trigger email notifications
+###
+### 4. Check application logs for:
+###    - Email sending confirmations
+###    - Billing record logs
+###    - Any error messages
+###
+### 5. Verify emails are received at john.doe@example.com
+###
+### 6. Test cron jobs by waiting for scheduled times or 
+###    by temporarily changing the cron expressions
+###
+###############################################
+
+### Email Test Configuration
+### Add these to your .env file:
+
+# For Gmail:
+# EMAIL_USER=your-email@gmail.com
+# EMAIL_PASSWORD=your-16-digit-app-password
+# EMAIL_FROM=noreply@yourapp.com
+
+# For SendGrid:
+# SENDGRID_API_KEY=SG.your-sendgrid-api-key
+# EMAIL_FROM=noreply@yourapp.com
+
+###############################################
+### Expected Email Templates:
+
+### Receipt Email Should Include:
+# - Customer name and email
+# - Invoice number
+# - Payment amount and date
+# - Billing period
+# - Plan name
+# - Receipt PDF link (if available)
+
+### Renewal Reminder Should Include:
+# - Customer name
+# - Plan name and amount
+# - Renewal date
+# - Days until renewal
+# - Manage subscription link
+# - Clear call-to-action
+
+###############################################

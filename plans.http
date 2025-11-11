@@ -6,7 +6,7 @@
 # Test variables
 @testPlanName = Basic Plan
 @testPlanId = bbf41d1b-fd80-48a8-bf7e-03e7504181c2
-@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YWQ1ODdkMC03MjMwLTQ1ZmMtYWM1OS1iMTQ4MmI1MTY3MjUiLCJlbWFpbCI6InRlc3RpbmcwMDJAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjAsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjE0MzQ5MTgsImV4cCI6MTc2MTUyMTMxOH0.aoUNOlDkOSd2_mIzlKJEnJtAXXxisRzltGeeIxW0Eto
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODBjODI4Yy0yZjdlLTQxNGEtYTU0MC1jMmEzYWI4Y2EzOGIiLCJlbWFpbCI6InRlc3RpbmcwMDNAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjIsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjI3NzYwNjMsImV4cCI6MTc2Mjg2MjQ2M30.FurA7pyxe6hImhUie4Fe-37xqHcG0L0LW8mn7YcUyIU
 ### ============================================
 ### PLANS MODULE TESTS
 ### ============================================
@@ -70,7 +70,7 @@ Authorization: Bearer {{jwtToken}}
     "description": "Updated description for basic plan"
 }
 
-### 8. Deactivate Plan (Redundant Method)
+### 8. Deactivate Plan 
 PATCH {{baseUrl}}/plans/{{testPlanId}}/deactivate
 Content-Type: {{contentType}}
 Authorization: Bearer {{jwtToken}}
@@ -79,7 +79,7 @@ Authorization: Bearer {{jwtToken}}
     "isActive": false
 }
 
-### 9. Activate Plan (Redundant Method)
+### 9. Activate Plan 
 PATCH {{baseUrl}}/plans/{{testPlanId}}/activate
 Content-Type: {{contentType}}
 Authorization: Bearer {{jwtToken}}

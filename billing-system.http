@@ -1,0 +1,165 @@
+### Billing System HTTP Tests
+### Test the new billing module with email functionality
+
+# Variables
+@baseUrl = http://localhost:3000
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+###############################################################################
+# 📧 EMAIL TESTING ENDPOINTS
+###############################################################################
+
+### Test Receipt Email
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "test@example.com",
+  "name": "John Doe",
+  "invoiceNumber": "INV-2024-001",
+  "amount": 2999,
+  "currency": "usd",
+  "planName": "Premium Monthly Plan",
+  "pdfUrl": "https://stripe.com/receipt/example.pdf"
+}
+
+### Test Renewal Reminder Email
+POST {{baseUrl}}/billings/test/renewal-reminder
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "test@example.com",
+  "name": "John Doe",
+  "planName": "Premium Monthly Plan",
+  "amount": 2999,
+  "currency": "usd",
+  "subscriptionId": "sub_1SRqtgK94x7YK47vqYLCKr6c"
+}
+
+###############################################################################
+# 📊 BILLING HISTORY ENDPOINTS
+###############################################################################
+
+### Get Billing History for Customer
+GET {{baseUrl}}/billings/history/cus_TOe08WknF9Gv9N
+Authorization: Bearer {{jwtToken}}
+
+###############################################################################
+# 🔄 WEBHOOK TESTING FOR BILLING AUTOMATION
+###############################################################################
+
+### Test Invoice Payment Succeeded (Receipt Email Trigger)
+# This would be triggered by Stripe webhook
+# Use stripe CLI: stripe trigger invoice.payment_succeeded
+# or manually trigger via Stripe Dashboard
+
+### Test Subscription Updated (Renewal Check Trigger)
+# This would be triggered by Stripe webhook
+# Use stripe CLI: stripe trigger customer.subscription.updated
+# or manually trigger via Stripe Dashboard
+
+###############################################################################
+# 📅 SCHEDULER TESTING
+###############################################################################
+
+### Manual Trigger for Renewal Reminders
+# Note: This is internal scheduler functionality
+# Check logs for cron job execution:
+# - Daily at 9 AM: checkUpcomingRenewals()
+# - Hourly 9-5 weekdays: checkFailedPayments()
+# - Weekly Monday 8 AM: generateWeeklyBillingSummary()
+
+###############################################################################
+# 📋 EMAIL TEMPLATE TESTING
+###############################################################################
+
+### Test Receipt Email with Full Data
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "billing-test@example.com",
+  "name": "Jane Smith",
+  "invoiceNumber": "TEST-RECEIPT-001",
+  "amount": 4999,
+  "currency": "usd",
+  "planName": "Enterprise Annual Plan",
+  "pdfUrl": "https://invoices.stripe.com/acct_test_123/live_YWNjdF90ZXN0XzEyMw/fl_test_YWNjdF90ZXN0XzEyMw0"
+}
+
+### Test Receipt Email with Minimal Data
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "minimal-test@example.com"
+}
+
+### Test Renewal Reminder with Different Days
+POST {{baseUrl}}/billings/test/renewal-reminder
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "renewal-test@example.com",
+  "name": "Bob Johnson",
+  "planName": "Basic Monthly Plan",
+  "amount": 999,
+  "currency": "usd",
+  "subscriptionId": "sub_test_urgent_renewal"
+}
+
+###############################################################################
+# 🎯 INTEGRATION TESTING WITH REAL STRIPE DATA
+###############################################################################
+
+### Get Real Billing History (using actual customer from previous tests)
+GET {{baseUrl}}/billings/history/cus_TOe08WknF9Gv9N
+Authorization: Bearer {{jwtToken}}
+
+### Test with Real Invoice Data
+# After making a payment via stripe-payments.http, check that:
+# 1. Receipt email was automatically sent (check logs)
+# 2. Billing record was created (check logs)
+# 3. Customer data was properly extracted
+
+###############################################################################
+# 📧 EMAIL SERVICE CONFIGURATION TEST
+###############################################################################
+
+### Verify Email Service is Working
+# Before running tests, ensure .env has correct email configuration:
+# EMAIL_USER=your_email@gmail.com
+# EMAIL_PASSWORD=your_app_password_here  
+# EMAIL_FROM=noreply@yourapp.com
+
+### Common Email Setup Issues:
+# 1. Gmail: Use App Password, not regular password
+# 2. Make sure "Less secure apps" is enabled (if using regular auth)
+# 3. For production: Use SendGrid, AWS SES, or similar service
+# 4. Check firewall/network settings for SMTP access
+
+###############################################################################
+# 🔍 DEBUGGING AND MONITORING
+###############################################################################
+
+### Check Application Logs for Email Processing
+# docker logs subscription-service -f
+# Look for:
+# - "Receipt email sent to..." 
+# - "Renewal reminder sent to..."
+# - "Starting daily renewal reminder check..."
+# - "Weekly Summary: ..."
+
+### Test Error Handling
+POST {{baseUrl}}/billings/test/receipt
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "email": "invalid-email-format"
+}

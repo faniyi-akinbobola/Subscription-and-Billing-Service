@@ -1,0 +1,18 @@
+### 🔑 Get Authentication Token First
+POST http://localhost:3000/auth/signin
+Content-Type: application/json
+
+{
+    "email": "test1@example.com",
+    "password": "password123"
+}
+
+### Test Stripe Customer Creation
+POST http://localhost:3000/payments/customers
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5NDEyOGU2MS0xMTMwLTQyZjAtOTg2ZS0xNDI5MGI2MGZjNjkiLCJlbWFpbCI6InRlc3QxQGV4YW1wbGUuY29tIiwidG9rZW5WZXJzaW9uIjowLCJpc0FkbWluIjpmYWxzZSwiaWF0IjoxNzMxMjczNjMzLCJleHAiOjE3MzEzNjAwMzN9.DK0kM83QYnwQOJsOoYCr8Z9n8oy5eDKCsJUvCAcgTnE
+
+{
+    "email": "test.customer@example.com",
+    "name": "Test Customer"
+}

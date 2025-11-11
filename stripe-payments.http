@@ -1,0 +1,773 @@
+# 💳 Stripe Payment Service API Testing
+# Complete HTTP test file for all Stripe payment endpoints
+
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+# 🔑 IMPORTANT: Update these variables with real values from signin
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlOGFjMDU2YS0xYzk0LTQ2MjctYjllZC1iMDYzMzdlYTA5ZmQiLCJlbWFpbCI6InN0cmlwZS50ZXN0QGV4YW1wbGUuY29tIiwidG9rZW5WZXJzaW9uIjowLCJpc0FkbWluIjpmYWxzZSwiaWF0IjoxNzYyODA3MzUyLCJleHAiOjE3NjI4OTM3NTJ9.ep3s9eO3p25BmKttscftdnZoajm6vIZMGp_AV_NQdbo
+@testCustomerId = cus_TOr844OZQD0sPO
+@testPaymentIntentId = pi_3SRqa8K94x7YK47v0ISIMibM
+@testSubscriptionId = sub_1SS3cEK94x7YK47vIsM2x7Gd
+@testPriceId = price_1SRqdjK94x7YK47vBd68Roog
+@testPaymentMethodId = pm_card_visa
+@testInvoiceId = in_1SRqtgK94x7YK47voT6WbVYO
+
+# 💡 Additional price IDs for subscription updates (update these after creating prices)
+@basicPriceId = price_1SRqdjK94x7YK47vBd68Roog
+@enterprisePriceId = price_1SRuDQK94x7YK47vU92przPL
+@yearlyPriceId = price_1SRqdjK94x7YK47vBd68Roog
+
+# 🏷️ Valid Product IDs from your Stripe account
+@basicProductId = prod_TOdv9NzFEatCWS
+@enterpriseProductId = prod_TOhca8ZC00AdgV
+@premiumProductId = prod_TOhgaLp1J4uKnZ
+
+### ============================================
+### ⚡ QUICK SUBSCRIPTION UPDATE TEST
+### ============================================
+
+### Test 1: Update subscription to enterprise plan (valid price ID)
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "{{enterprisePriceId}}"
+}
+
+### Test 2: Update subscription back to basic plan
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "{{basicPriceId}}"
+}
+
+### Test 3: Verify subscription details
+GET {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### 🔐 AUTHENTICATION SETUP
+### ============================================
+
+### Step 1: Sign up test user (if needed)
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+
+{
+    "email": "stripe.test@example.com",
+    "password": "password123"
+}
+
+### Step 2: Sign in to get JWT token
+# @name signin
+POST {{baseUrl}}/auth/signin
+Content-Type: {{contentType}}
+
+{
+    "email": "stripe.test@example.com",
+    "password": "password123"
+}
+
+### ⚠️ COPY THE access_token FROM ABOVE RESPONSE TO @jwtToken VARIABLE
+
+### ============================================
+### 💳 CUSTOMER MANAGEMENT
+### ============================================
+
+### Create a Stripe Customer
+# @name createCustomer
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "customer@example.com",
+    "name": "John Doe",
+    "phone": "+1234567890",
+    "metadata": {
+        "userId": "internal-user-123",
+        "source": "web-app"
+    }
+}
+
+### Get Customer Details
+# Replace with actual customer ID from createCustomer response
+GET {{baseUrl}}/payments/customers/{{testCustomerId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### 🎯 PAYMENT INTENT MANAGEMENT
+### ============================================
+
+### Create Payment Intent (One-time payment)
+# @name createPaymentIntent
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 2999,
+    "currency": "usd",
+    "description": "Premium subscription payment",
+    "metadata": {
+        "orderId": "order_123",
+        "planId": "premium-plan"
+    }
+}
+
+### Create Payment Intent with Customer
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 4999,
+    "currency": "usd",
+    "customerId": "{{testCustomerId}}",
+    "description": "Enterprise plan upgrade",
+    "metadata": {
+        "upgrade": true,
+        "previousPlan": "premium"
+    }
+}
+
+### Get Payment Intent Details
+GET {{baseUrl}}/payments/payment-intents/{{testPaymentIntentId}}
+Authorization: Bearer {{jwtToken}}
+
+### Confirm Payment Intent
+POST {{baseUrl}}/payments/payment-intents/{{testPaymentIntentId}}/confirm
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "paymentMethodId": "{{testPaymentMethodId}}"
+}
+
+### ============================================
+### 🛒 CHECKOUT SESSION MANAGEMENT (with return URLs)
+### ============================================
+
+### Create Checkout Session (Hosted payment page with return URLs)
+# @name createCheckoutSession
+POST {{baseUrl}}/payments/checkout-sessions
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 2999,
+    "currency": "usd",
+    "description": "Premium subscription payment",
+    "success_url": "http://localhost:3000/payments/return?session_id={CHECKOUT_SESSION_ID}",
+    "cancel_url": "http://localhost:3000/payments/cancel",
+    "metadata": {
+        "orderId": "order_456",
+        "planId": "premium-plan"
+    }
+}
+
+### Create Checkout Session with Customer
+POST {{baseUrl}}/payments/checkout-sessions
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 4999,
+    "currency": "usd",
+    "customerId": "{{testCustomerId}}",
+    "description": "Enterprise plan upgrade",
+    "success_url": "http://localhost:3000/payments/return?session_id={CHECKOUT_SESSION_ID}",
+    "cancel_url": "http://localhost:3000/payments/cancel",
+    "metadata": {
+        "upgrade": true,
+        "previousPlan": "premium"
+    }
+}
+
+### ============================================
+### 📋 SUBSCRIPTION UPDATE WORKFLOW
+### ============================================
+
+### Step 1: List all available prices to see options
+GET {{baseUrl}}/payments/prices
+Authorization: Bearer {{jwtToken}}
+
+### Step 2: Create a new price if needed (e.g., for plan upgrade)
+# @name newPlanPrice
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 4999,
+    "currency": "usd",
+    "interval": "month"
+}
+
+### Step 3: Update subscription to new price ID
+# Use the price ID from Step 2 response or existing price ID
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "price_1SRqdjK94x7YK47vBd68Roog"
+}
+
+### Step 4: Verify subscription was updated
+GET {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### �📅 SUBSCRIPTION MANAGEMENT
+### ============================================
+
+### Create Subscription
+# @name createSubscription
+# NOTE: Creating without paymentMethodId will generate an invoice for customer to pay
+# This is the recommended approach for SaaS subscriptions
+POST {{baseUrl}}/payments/subscriptions
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "customerId": "{{testCustomerId}}",
+    "priceId": "{{testPriceId}}",
+    "metadata": {
+        "planName": "Premium Monthly",
+        "userId": "user-123"
+    }
+}
+
+### Get Subscription Details
+GET {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Authorization: Bearer {{jwtToken}}
+
+### Update Subscription (Change Plan)
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "{{basicPriceId}}"
+}
+
+### Update Subscription to Enterprise Plan
+# Make sure to create enterprise price first using the request above
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "{{enterprisePriceId}}"
+}
+
+### Update Subscription to Yearly Plan  
+# Make sure to create yearly price first
+PATCH {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "priceId": "{{yearlyPriceId}}"
+}
+
+### Cancel Subscription
+DELETE {{baseUrl}}/payments/subscriptions/{{testSubscriptionId}}
+Authorization: Bearer {{jwtToken}}
+
+
+
+### Create Subscription WITHOUT Payment Method
+POST http://localhost:3000/payments/subscriptions
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlOGFjMDU2YS0xYzk0LTQ2MjctYjllZC1iMDYzMzdlYTA5ZmQiLCJlbWFpbCI6InN0cmlwZS50ZXN0QGV4YW1wbGUuY29tIiwidG9rZW5WZXJzaW9uIjowLCJpc0FkbWluIjpmYWxzZSwiaWF0IjoxNzYyNzQzOTIyLCJleHAiOjE3NjI4MzAzMjJ9.RkzkMVi3xWljSLKGw7J4xsGLlviN4uFVPJGPbD_etIk
+
+{
+    "customerId": "cus_TOe08WknF9Gv9N",
+    "priceId": "price_1SRqdjK94x7YK47vBd68Roog",
+    "metadata": {
+        "planName": "Premium Monthly",
+        "userId": "user-123"
+    }
+}
+
+
+### ============================================
+### 💰 PRICE AND PRODUCT MANAGEMENT
+### ============================================
+
+### Create Monthly Price
+# @name createMonthlyPrice
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 2999,
+    "currency": "usd",
+    "interval": "month"
+}
+
+### Create Yearly Price (with discount)
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 29990,
+    "currency": "usd",
+    "interval": "year"
+}
+
+### Create Enterprise Monthly Price
+# @name enterprisePrice
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 4999,
+    "currency": "usd",
+    "interval": "month"
+}
+
+### Create Quarterly Price
+# @name quarterlyPrice
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 7999,
+    "currency": "usd",
+    "interval": "month",
+    "intervalCount": 3
+}
+
+### Create Price with Existing Product
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 4999,
+    "currency": "usd",
+    "interval": "month",
+    "productId": "{{enterpriseProductId}}"
+}
+
+### Create Price with Another Existing Product  
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 9999,
+    "currency": "usd", 
+    "interval": "year",
+    "productId": "{{basicProductId}}"
+}
+
+### Create Price with Premium Product
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 7999,
+    "currency": "usd",
+    "interval": "month",
+    "productId": "{{premiumProductId}}"
+}
+
+### List All Active Prices
+GET {{baseUrl}}/payments/prices
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### 🎫 PAYMENT METHODS
+### ============================================
+
+### Attach Payment Method to Customer
+POST {{baseUrl}}/payments/payment-methods/{{testPaymentMethodId}}/attach
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "customerId": "{{testCustomerId}}"
+}
+
+### List Customer Payment Methods
+GET {{baseUrl}}/payments/customers/{{testCustomerId}}/payment-methods
+Authorization: Bearer {{jwtToken}}
+
+
+### Create Simple Payment Intent for Complete Invoice
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 999,
+    "currency": "usd",
+    "description": "Test payment for complete invoice",
+    "automatic_payment_methods": {
+        "enabled": true
+    }
+}
+
+### ============================================
+### 📋 INVOICE MANAGEMENT
+### ============================================
+
+### Get Invoice Details
+GET {{baseUrl}}/payments/invoices/{{testInvoiceId}}
+Authorization: Bearer {{jwtToken}}
+
+### List All Invoices
+GET {{baseUrl}}/payments/invoices
+Authorization: Bearer {{jwtToken}}
+
+### List Customer Invoices
+GET {{baseUrl}}/payments/invoices?customerId={{testCustomerId}}
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### 🔐 WEBHOOK TESTING
+### ============================================
+
+### Simulate Webhook (Payment Intent Succeeded)
+POST {{baseUrl}}/payments/webhooks
+Content-Type: application/json
+Stripe-Signature: t=1234567890,v1=test_signature_here
+
+{
+    "id": "evt_test_webhook",
+    "object": "event",
+    "api_version": "2023-10-16",
+    "created": 1234567890,
+    "data": {
+        "object": {
+            "id": "pi_test_payment_intent",
+            "object": "payment_intent",
+            "amount": 2999,
+            "currency": "usd",
+            "status": "succeeded"
+        }
+    },
+    "type": "payment_intent.succeeded"
+}
+
+### ⚠️ Note: Real webhook testing requires proper Stripe signature
+### Use Stripe CLI for webhook testing: stripe listen --forward-to localhost:3000/payments/webhooks
+
+### ============================================
+### 🧪 STRIPE TEST CARDS
+### ============================================
+
+### Use these test payment method IDs in your requests:
+# Successful card: pm_card_visa (4242424242424242)
+# Declined card: pm_card_chargeDeclined (4000000000000002)
+# Requires authentication: pm_card_authenticationRequired (4000002500003155)
+# Insufficient funds: pm_card_insufficientFunds (4000000000009995)
+
+### Test with Successful Card
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "paymentMethodId": "pm_card_visa",
+    "description": "Test with successful card",
+    "return_url": "http://localhost:3000/payments/return"
+}
+
+### Test with Declined Card
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "paymentMethodId": "pm_card_chargeDeclined",
+    "description": "Test with declined card",
+    "return_url": "http://localhost:3000/payments/return"
+}
+
+### Test with 3DS Authentication Required Card
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "paymentMethodId": "pm_card_authenticationRequired",
+    "description": "Test 3DS authentication",
+    "return_url": "http://localhost:3000/payments/return"
+}
+
+### Test Payment Return Endpoint (3DS completion)
+GET {{baseUrl}}/payments/return
+Authorization: Bearer {{jwtToken}}
+
+### ============================================
+### 🚨 ERROR TESTING SCENARIOS
+### ============================================
+
+### Test with Invalid Amount (Should Fail)
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": -100,
+    "currency": "usd",
+    "description": "Invalid negative amount",
+    "return_url": "http://localhost:3000/payments/return"
+}
+
+### Test with Invalid Currency (Should Fail)
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "invalid",
+    "description": "Invalid currency test",
+    "return_url": "http://localhost:3000/payments/return"
+}
+
+### Test Customer Creation with Invalid Email (Should Fail)
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "not-an-email",
+    "name": "Test User"
+}
+
+### Test Without Authentication (Should Fail - 401)
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+
+{
+    "email": "test@example.com",
+    "name": "Unauthenticated User"
+}
+
+### Test with Invalid JWT Token (Should Fail - 401)
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+Authorization: Bearer invalid_token_here
+
+{
+    "email": "test@example.com",
+    "name": "Invalid Token User"
+}
+
+### ============================================
+### ⚡ RATE LIMITING TESTS
+### ============================================
+
+### Test Rate Limiting - Create Multiple Payment Intents Rapidly
+### (Should hit rate limit after 3 requests per minute)
+
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "description": "Rate limit test 1"
+}
+
+###
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "description": "Rate limit test 2"
+}
+
+###
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "description": "Rate limit test 3"
+}
+
+###
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1000,
+    "currency": "usd",
+    "description": "Rate limit test 4 - Should be blocked"
+}
+
+### ============================================
+### 🔄 COMPLETE PAYMENT FLOW TEST
+### ============================================
+
+### Step 1: Create Customer
+# @name flowCustomer
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "flow.test@example.com",
+    "name": "Flow Test User",
+    "metadata": {
+        "testFlow": true
+    }
+}
+
+### Step 2: Create Monthly Price
+# @name flowPrice
+POST {{baseUrl}}/payments/prices
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1999,
+    "currency": "usd",
+    "interval": "month"
+}
+
+### Step 3: Create Subscription (without payment method - generates invoice)
+# Use customer ID from Step 1 and price ID from Step 2
+# This creates a subscription that will generate an invoice for the customer to pay
+POST {{baseUrl}}/payments/subscriptions
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "customerId": "cus_TOrDNLBLtziBNs",
+    "priceId": "price_1SS3VKK94x7YK47vtNE5FVH9",
+    "metadata": {
+        "flowTest": true,
+        "planName": "Test Monthly Plan"
+    }
+}
+
+### Step 4: Create One-time Payment for Setup Fee
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 500,
+    "currency": "usd",
+    "customerId": "CUSTOMER_ID_FROM_STEP_1",
+    "description": "Setup fee for new subscription",
+    "metadata": {
+        "type": "setup_fee",
+        "flowTest": true
+    }
+}
+
+### ============================================
+### 🔄 COMPLETE PAYMENT FLOW WITH CHECKOUT
+### ============================================
+
+### Alternative Flow: Using Checkout Sessions (Recommended for UI)
+
+### Step 1: Create Customer
+# @name checkoutCustomer
+POST {{baseUrl}}/payments/customers
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "email": "checkout.test@example.com",
+    "name": "Checkout Test User",
+    "metadata": {
+        "testFlow": "checkout"
+    }
+}
+
+### Step 2: Create Checkout Session for Subscription Setup
+POST {{baseUrl}}/payments/checkout-sessions
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1999,
+    "currency": "usd",
+    "description": "Monthly Subscription Setup",
+    "success_url": "http://localhost:3000/payments/success?session_id={CHECKOUT_SESSION_ID}",
+    "cancel_url": "http://localhost:3000/payments/cancel",
+    "metadata": {
+        "type": "subscription_setup",
+        "planName": "Monthly Plan"
+    }
+}
+
+### Step 3: Create Payment Intent for Immediate Payment (Alternative to checkout)
+POST {{baseUrl}}/payments/payment-intents
+Content-Type: {{contentType}}
+Authorization: Bearer {{jwtToken}}
+
+{
+    "amount": 1999,
+    "currency": "usd",
+    "description": "Monthly subscription payment",
+    "automatic_payment_methods": {
+        "enabled": true
+    },
+    "metadata": {
+        "subscriptionFlow": true
+    }
+}
+
+### ============================================
+### 📊 TESTING SUMMARY
+### ============================================
+
+### ✅ What to Test:
+### 1. Authentication with JWT tokens
+### 2. Customer creation and retrieval
+### 3. Payment intent creation and confirmation
+### 4. Subscription lifecycle (create, read, update, cancel)
+### 5. Price and product management
+### 6. Payment method attachment
+### 7. Invoice management
+### 8. Error handling and validation
+### 9. Rate limiting protection
+### 10. Complete payment flows
+
+### 🔑 Required Setup:
+### 1. Add your Stripe test API keys to .env
+### 2. Start your application: npm run start:dev
+### 3. Get JWT token from signin request
+### 4. Replace variables with actual IDs from responses
+### 5. Use Stripe test cards for payment methods
+
+### 📝 Notes:
+### - All endpoints require JWT authentication except webhooks
+### - Rate limiting is applied to prevent abuse
+### - Use Stripe test mode for all testing
+### - Webhook testing requires Stripe CLI or valid signatures
+### - Real payment methods need Stripe Elements integration

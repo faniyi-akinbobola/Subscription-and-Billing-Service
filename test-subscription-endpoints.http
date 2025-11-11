@@ -1,0 +1,182 @@
+###
+# Subscription Service API Testing
+# 
+# Instructions:
+# 1. Start your server: npm run start:dev
+# 2. Get JWT tokens by signing in through auth endpoints
+# 3. Replace YOUR_USER_TOKEN_HERE and YOUR_ADMIN_TOKEN_HERE with actual tokens
+# 4. Replace test IDs with actual UUIDs from your database
+# 5. Run tests in order: Create → Read → Update → Delete
+#
+# Prerequisites:
+# - Server running on http://localhost:3000
+# - Database with users and plans data
+# - Valid JWT tokens with appropriate roles
+###
+
+### Variables
+@baseUrl = http://localhost:3000
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODBjODI4Yy0yZjdlLTQxNGEtYTU0MC1jMmEzYWI4Y2EzOGIiLCJlbWFpbCI6InRlc3RpbmcwMDNAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjIsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjI3NzYwNjMsImV4cCI6MTc2Mjg2MjQ2M30.FurA7pyxe6hImhUie4Fe-37xqHcG0L0LW8mn7YcUyIU
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjZjJlOTgyNC0zZjkxLTRjYmItYjcyMi1iNDcyZGI4YmY1ZTUiLCJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwidG9rZW5WZXJzaW9uIjoxLCJpc0FkbWluIjp0cnVlLCJpYXQiOjE3NjI2MzE5MTcsImV4cCI6MTc2MjcxODMxN30.JeJ2Q8W28yBUtF-a4ss43PskdpKhlDOc0tNbOe1zrkY
+
+# Test IDs (replace with actual IDs from your database)
+@userId = c80c828c-2f7e-414a-a540-c2a3ab8ca38b
+@planId = 9a327900-c916-431f-816d-6c725f41f847
+@subscriptionId = 5725f61e-8b73-4fd4-9f24-c158e633f6c9
+@newPlanId = bbf41d1b-fd80-48a8-bf7e-03e7504181c2
+
+### Get all subscriptions (admin only)
+GET {{baseUrl}}/subscriptions
+Authorization: Bearer {{adminToken}}
+
+### Get subscription statistics (admin only)  
+GET {{baseUrl}}/subscriptions/stats
+Authorization: Bearer {{adminToken}}
+
+### Get my subscriptions
+GET {{baseUrl}}/subscriptions/me
+Authorization: Bearer {{userToken}}
+
+### Get subscriptions with filters (admin only)
+GET {{baseUrl}}/subscriptions?status=active&page=1&limit=5
+Authorization: Bearer {{adminToken}}
+
+### Get single subscription (admin only)
+GET {{baseUrl}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+
+### Create new subscription (admin only)
+POST {{baseUrl}}/subscriptions/create
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "planId": "{{planId}}",
+  "status": "cancelled",
+  "isAutoRenew": true
+}
+
+### 🚀 User chooses/subscribes to a plan (any authenticated user)
+POST {{baseUrl}}/subscriptions/subscribe
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "planId": "{{planId}}",
+  "status": "trial",
+  "isAutoRenew": true
+}
+
+### Update subscription
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "status": "active",
+  "isAutoRenew": false
+}
+
+### Change subscription plan
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}/change-plan
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "newPlanId": "{{newPlanId}}"
+}
+
+### Renew subscription
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}/renew
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "customEndDate": "2025-12-31T23:59:59Z"
+}
+
+### Renew subscription without custom end date
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}/renew
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{}
+
+### Cancel subscription
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}/cancel
+Authorization: Bearer {{userToken}}
+
+### Delete subscription (admin only)
+DELETE {{baseUrl}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{adminToken}}
+
+### Error Testing - Get subscriptions without auth (should fail)
+GET {{baseUrl}}/subscriptions
+
+### Error Testing - Create subscription without admin role (should fail)
+POST {{baseUrl}}/subscriptions/create
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "planId": "{{planId}}"
+}
+
+### Error Testing - Create subscription with invalid data (should fail)
+POST {{baseUrl}}/subscriptions/create
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "",
+  "planId": "invalid-plan-id"
+}
+
+### Advanced Testing - Get subscriptions with multiple filters
+GET {{baseUrl}}/subscriptions?status=active&page=1&limit=10&isAutoRenew=true
+Authorization: Bearer {{adminToken}}
+
+### Advanced Testing - Create subscription with trial status
+POST {{baseUrl}}/subscriptions/create
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "planId": "{{planId}}",
+  "status": "active",
+  "startDate": "2025-11-08T00:00:00Z",
+  "isAutoRenew": true
+}
+
+### Advanced Testing - Create subscription with pending status
+POST {{baseUrl}}/subscriptions/create
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "planId": "{{planId}}",
+  "status": "pending",
+  "isAutoRenew": false
+}
+
+### Advanced Testing - Update subscription to cancelled status
+PATCH {{baseUrl}}/subscriptions/{{subscriptionId}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "status": "cancelled",
+  "renewedAt": "2025-11-08T10:00:00Z"
+}
+
+### Advanced Testing - Get subscriptions filtered by user
+GET {{baseUrl}}/subscriptions?userId={{userId}}&page=1&limit=5
+Authorization: Bearer {{adminToken}}
+
+### Advanced Testing - Get subscriptions filtered by plan
+GET {{baseUrl}}/subscriptions?planId={{planId}}&status=active
+Authorization: Bearer {{adminToken}}

@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Subscription } from '../../subscriptions/entities/subscription.entity';
 
 @Entity('users')
 export class User {
@@ -22,6 +24,10 @@ export class User {
 
   @Column({ default: false })
   admin: boolean;
+
+  // 📦 User's subscriptions
+  @OneToMany(() => Subscription, (subscription) => subscription.user)
+  subscriptions: Subscription[];
 
   @CreateDateColumn()
   createdAt: Date;

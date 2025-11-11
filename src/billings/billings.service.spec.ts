@@ -1,18 +1,182 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BillingsService } from './billings.service';
+import { EmailService } from '../email/email.service';
+import Stripe from 'stripe';
 
 describe('BillingsService', () => {
   let service: BillingsService;
+  let emailService: EmailService;
+
+  // Mock EmailService
+  const mockEmailService = {
+    sendReceiptEmail: jest.fn().mockResolvedValue(undefined),
+    sendRenewalReminderEmail: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [BillingsService],
+      providers: [
+        BillingsService,
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
+        },
+      ],
     }).compile();
 
     service = module.get<BillingsService>(BillingsService);
+    emailService = module.get<EmailService>(EmailService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('processPaymentReceipt', () => {
+    it('should process paid invoice and send receipt email', async () => {
+      const mockInvoice = {
+        id: 'in_test123',
+        status: 'paid',
+        customer: {
+          id: 'cus_test123',
+          email: 'test@example.com',
+          name: 'Test Customer',
+        },
+        number: 'TEST-001',
+        amount_paid: 2999,
+        currency: 'usd',
+        status_transitions: {
+          paid_at: Math.floor(Date.now() / 1000),
+        },
+        period_start: Math.floor(Date.now() / 1000),
+        period_end: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+        invoice_pdf: 'https://example.com/invoice.pdf',
+        lines: {
+          data: [
+            {
+              description: 'Premium Plan',
+            },
+          ],
+        },
+        created: Math.floor(Date.now() / 1000),
+      } as unknown as Stripe.Invoice;
+
+      await service.processPaymentReceipt(mockInvoice);
+
+      expect(emailService.sendReceiptEmail).toHaveBeenCalledWith({
+        customerEmail: 'test@example.com',
+        customerName: 'Test Customer',
+        invoiceNumber: 'TEST-001',
+        amount: 2999,
+        currency: 'usd',
+        paidAt: expect.any(Date),
+        planName: 'Premium Plan',
+        period: {
+          start: expect.any(Date),
+          end: expect.any(Date),
+        },
+        pdfUrl: 'https://example.com/invoice.pdf',
+      });
+    });
+
+    it('should skip processing if invoice is not paid', async () => {
+      const mockInvoice = {
+        id: 'in_test123',
+        status: 'open',
+        customer: {
+          id: 'cus_test123',
+          email: 'test@example.com',
+          name: 'Test Customer',
+        },
+      } as unknown as Stripe.Invoice;
+
+      await service.processPaymentReceipt(mockInvoice);
+
+      expect(emailService.sendReceiptEmail).not.toHaveBeenCalled();
+    });
+
+    it('should skip processing if customer has no email', async () => {
+      const mockInvoice = {
+        id: 'in_test123',
+        status: 'paid',
+        customer: {
+          id: 'cus_test123',
+          email: null,
+          name: 'Test Customer',
+        },
+      } as unknown as Stripe.Invoice;
+
+      await service.processPaymentReceipt(mockInvoice);
+
+      expect(emailService.sendReceiptEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('processUpcomingRenewal', () => {
+    it('should send renewal reminder for valid subscription', async () => {
+      const mockSubscription = {
+        id: 'sub_test123',
+        customer: {
+          id: 'cus_test123',
+          email: 'test@example.com',
+          name: 'Test Customer',
+        },
+        current_period_end: Math.floor(
+          (Date.now() + 3 * 24 * 60 * 60 * 1000) / 1000,
+        ), // 3 days from now
+        items: {
+          data: [
+            {
+              price: {
+                unit_amount: 2999,
+                currency: 'usd',
+                nickname: 'Premium Plan',
+              },
+            },
+          ],
+        },
+      } as unknown as Stripe.Subscription;
+
+      await service.processUpcomingRenewal(mockSubscription, 3);
+
+      expect(emailService.sendRenewalReminderEmail).toHaveBeenCalledWith({
+        customerEmail: 'test@example.com',
+        customerName: 'Test Customer',
+        planName: 'Premium Plan',
+        amount: 2999,
+        currency: 'usd',
+        renewalDate: expect.any(Date),
+        daysUntilRenewal: 3,
+        subscriptionId: 'sub_test123',
+      });
+    });
+
+    it('should skip if customer has no email', async () => {
+      const mockSubscription = {
+        id: 'sub_test123',
+        customer: {
+          id: 'cus_test123',
+          email: null,
+          name: 'Test Customer',
+        },
+      } as unknown as Stripe.Subscription;
+
+      await service.processUpcomingRenewal(mockSubscription, 3);
+
+      expect(emailService.sendRenewalReminderEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getBillingHistory', () => {
+    it('should return billing history for customer', async () => {
+      const customerId = 'cus_test123';
+      const result = await service.getBillingHistory(customerId);
+
+      expect(result).toEqual([]);
+    });
   });
 });

@@ -4,10 +4,10 @@
 @contentType = application/json
 
 # Variables for testing
-@testEmail = testing002@example.com
+@testEmail = testing003@example.com
 @testPassword = password123
 @testUserId = 9d83d261-1481-4369-a10a-e6fede7195ff
-@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5YWQ1ODdkMC03MjMwLTQ1ZmMtYWM1OS1iMTQ4MmI1MTY3MjUiLCJlbWFpbCI6InRlc3RpbmcwMDJAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjAsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjE0MzQ5MTgsImV4cCI6MTc2MTUyMTMxOH0.aoUNOlDkOSd2_mIzlKJEnJtAXXxisRzltGeeIxW0Eto
+@jwtToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODBjODI4Yy0yZjdlLTQxNGEtYTU0MC1jMmEzYWI4Y2EzOGIiLCJlbWFpbCI6InRlc3RpbmcwMDNAZXhhbXBsZS5jb20iLCJ0b2tlblZlcnNpb24iOjIsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3NjI3NzYwNjMsImV4cCI6MTc2Mjg2MjQ2M30.FurA7pyxe6hImhUie4Fe-37xqHcG0L0LW8mn7YcUyIU
 
 ### ============================================
 ### AUTH MODULE TESTS
@@ -36,7 +36,7 @@ Content-Type: {{contentType}}
 ### 3. Get Profile (Protected Route)
 # Note: Replace YOUR_JWT_TOKEN with actual token from signin response
 GET {{baseUrl}}/auth/profile
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNzkwODRkMS1lYzhhLTQ3MGYtODY4Yi0xOTc0OTQyZjU5YTkiLCJlbWFpbCI6InRlc3QwMUBleGFtcGxlLmNvbSIsInRva2VuVmVyc2lvbiI6MCwiaWF0IjoxNzYxNDI5NTU2LCJleHAiOjE3NjE1MTU5NTZ9.qa4VQFs0pvnd8T7R8SnBn5sQPFuOfJf5iDBQ_SOj5vw
+Authorization: Bearer {{jwtToken}}
 
 ### 4. Sign Out (Protected Route)
 # Note: Use token from signin response above
@@ -52,7 +52,7 @@ POST {{baseUrl}}/auth/signup
 Content-Type: {{contentType}}
 
 {
-    "email": "admin@example.com",
+    "email": "admin10@example.com",
     "password": "adminpass123",
     "admin": true
 }
