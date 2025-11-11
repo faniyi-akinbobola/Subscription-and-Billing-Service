@@ -45,9 +45,9 @@
 ```bash
 # Visit: https://dashboard.stripe.com/test/apikeys
 # Replace these in .env file:
-STRIPE_SECRET_KEY=sk_test_your_actual_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_actual_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=whsec_your_actual_webhook_secret
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here  
+STRIPE_WEBHOOK_SECRET=your_webhook_secret_here
 ```
 
 ### 2. Setup Webhook Endpoint:
@@ -72,7 +72,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_actual_webhook_secret
 # 3. Forward webhooks to your local server:
 .\stripe-cli\stripe.exe listen --forward-to localhost:3000/payments/webhooks
 
-# This will give you a webhook secret like: whsec_xxxxx
+# This will give you a webhook secret like: whsec_XXXXXXXXXXXXXXXXXXXX
 # Copy this secret to your .env file as STRIPE_WEBHOOK_SECRET
 ```
 

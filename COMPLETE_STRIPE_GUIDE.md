@@ -8,9 +8,9 @@
 # 1. Go to: https://dashboard.stripe.com/test/apikeys
 # 2. Copy your keys and update .env file:
 
-STRIPE_SECRET_KEY=sk_test_51A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6
-STRIPE_PUBLISHABLE_KEY=pk_test_51A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6
-STRIPE_WEBHOOK_SECRET=whsec_1234567890abcdef1234567890abcdef12345678
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
+STRIPE_WEBHOOK_SECRET=your_webhook_secret_here
 ```
 
 ### 2. **Start Your Application**
@@ -280,7 +280,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 
-const stripePromise = loadStripe('pk_test_your_publishable_key');
+const stripePromise = loadStripe('your_publishable_key_here');
 
 function PaymentForm() {
   const stripe = useStripe();
@@ -344,12 +344,12 @@ export default function App() {
 # Use different keys for development/production
 
 # Development
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=your_development_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_development_publishable_key_here
 
 # Production
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_YOUR_LIVE_SECRET_KEY_HERE
+STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_LIVE_PUBLISHABLE_KEY_HERE
 ```
 
 ### **2. Webhook Signature Verification**

@@ -203,9 +203,9 @@ DB_PASSWORD=your_secure_password
 DB_NAME=subscription_db
 
 # Stripe (Get from https://dashboard.stripe.com/test/apikeys)
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
+STRIPE_WEBHOOK_SECRET=your_webhook_secret_here
 
 # Email (Gmail configuration)
 EMAIL_HOST=smtp.gmail.com
@@ -220,7 +220,7 @@ EMAIL_SECURE=false
 
 1. **Create a Stripe Account**: Visit [stripe.com](https://stripe.com) and create a free account
 2. **Get API Keys**: Go to Dashboard → Developers → API keys
-3. **Copy Test Keys**: Use test keys (they start with `sk_test_` and `pk_test_`)
+3. **Copy Test Keys**: Use test keys (they start with `sk_test_...` and `pk_test_...`)
 4. **Webhook Setup**: Create a webhook endpoint pointing to `http://your-domain/payments/webhooks`
 
 ### Setting up Gmail for Email
