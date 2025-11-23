@@ -1,8 +1,8 @@
-# 🚀 Subscription & Billing Service# 🚀 Subscription & Billing Service
+# Subscription & Billing Service# 
 
 A comprehensive **NestJS-based subscription and billing service** with **Stripe integration**, automated email notifications, and robust payment processing capabilities.A comprehensive **NestJS-based subscription and billing service** with **Stripe integration**, automated email notifications, and robust payment processing capabilities.
 
-## ✨ Features## ✨ Features
+## Features
 
 ### 🔐 **Authentication & Security**[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
