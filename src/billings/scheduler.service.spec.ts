@@ -2,8 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerService } from './scheduler.service';
 import { BillingsService } from './billings.service';
 import { PaymentsService } from '../payments/payments.service';
+import { CircuitBreakerService } from '../common/circuit-breaker.service';
 import { PinoLogger } from 'nestjs-pino';
 import Stripe from 'stripe';
+import CircuitBreaker from 'opossum';
 
 // Mock Stripe constructor
 jest.mock('stripe', () => {
@@ -74,6 +76,21 @@ describe('SchedulerService', () => {
     // No need for stripe property since SchedulerService creates its own instance
   };
 
+  const mockCircuitBreaker = {
+    fire: jest.fn((fn) => fn()),
+    fallback: jest.fn(),
+    on: jest.fn(),
+  };
+
+  const mockCircuitBreakerService = {
+    createBreaker: jest.fn().mockReturnValue(mockCircuitBreaker),
+    getBreaker: jest.fn(),
+    getStats: jest.fn(),
+    getAllStats: jest.fn(),
+    reset: jest.fn(),
+    shutdown: jest.fn(),
+  };
+
   const mockPinoLogger = {
     info: jest.fn(),
     error: jest.fn(),
@@ -97,6 +114,10 @@ describe('SchedulerService', () => {
         {
           provide: PaymentsService,
           useValue: mockPaymentsService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: mockCircuitBreakerService,
         },
         {
           provide: 'STRIPE_CONFIG',

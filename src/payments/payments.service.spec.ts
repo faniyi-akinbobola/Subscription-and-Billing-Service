@@ -5,6 +5,7 @@ import { PaymentsService } from './payments.service';
 import { BillingsService } from '../billings/billings.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { UsersService } from '../users/users.service';
+import { CircuitBreakerService } from '../common/circuit-breaker.service';
 import { Payment } from './entities/payment.entity';
 import { Currency } from './dto/create-payment-intent.dto';
 import { PinoLogger } from 'nestjs-pino';
@@ -103,6 +104,16 @@ describe('PaymentsService', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: {
+            createBreaker: jest.fn().mockReturnValue({
+              fire: jest.fn((fn) => fn()),
+              fallback: jest.fn(),
+              on: jest.fn(),
+            }),
+          },
         },
         {
           provide: 'STRIPE_CONFIG',

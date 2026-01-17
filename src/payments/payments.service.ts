@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import Stripe from 'stripe';
+import CircuitBreaker from 'opossum';
+import { CircuitBreakerService } from '../common/circuit-breaker.service';
 import {
   CreatePaymentIntentDto,
   ConfirmPaymentIntentDto,
@@ -19,6 +21,7 @@ import { SubscriptionStatus } from '../subscriptions/entities/subscription.entit
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
+  private stripeCircuitBreaker: CircuitBreaker<any[], any>;
 
   constructor(
     @InjectPinoLogger(PaymentsService.name)
@@ -29,6 +32,7 @@ export class PaymentsService {
     private billingsService: BillingsService,
     private subscriptionsService: SubscriptionsService,
     private usersService: UsersService,
+    private circuitBreakerService: CircuitBreakerService,
   ) {
     this.stripe = new Stripe(this.stripeConfig.secretKey, {
       apiVersion: this.stripeConfig.apiVersion,
@@ -36,6 +40,48 @@ export class PaymentsService {
       maxNetworkRetries: 3, // Retry failed requests 3 times
       httpAgent: undefined, // Use default HTTP agent
     });
+    this.setupCircuitBreaker();
+  }
+
+  /**
+   * Setup circuit breaker for Stripe API calls
+   * Protects against Stripe API outages and rate limiting
+   * 
+   * @private
+   */
+  private setupCircuitBreaker() {
+    this.stripeCircuitBreaker = this.circuitBreakerService.createBreaker(
+      'stripe-api',
+      async (apiCall: () => Promise<any>) => {
+        return await apiCall();
+      },
+      {
+        timeout: 30000, // 30 seconds timeout for Stripe API calls
+        errorThresholdPercentage: 50, // Open circuit if 50% fail
+        resetTimeout: 60000, // Try again after 1 minute
+        volumeThreshold: 5, // Need at least 5 requests before opening
+      },
+    );
+
+    // Fallback: Return error message when circuit is open
+    this.stripeCircuitBreaker.fallback(() => {
+      this.logger.warn('Stripe API circuit breaker open - service unavailable');
+      throw new BadRequestException(
+        'Payment service temporarily unavailable. Please try again later.',
+      );
+    });
+  }
+
+  /**
+   * Execute Stripe API call with circuit breaker protection
+   * 
+   * @param apiCall - The Stripe API call function to execute
+   * @returns Promise with the result of the API call
+   */
+  private async executeWithCircuitBreaker<T>(
+    apiCall: () => Promise<T>,
+  ): Promise<T> {
+    return this.stripeCircuitBreaker.fire(apiCall);
   }
 
   // 💳 Customer Management
@@ -43,12 +89,14 @@ export class PaymentsService {
     createCustomerDto: CreateCustomerDto,
   ): Promise<Stripe.Customer> {
     try {
-      const customer = await this.stripe.customers.create({
-        email: createCustomerDto.email,
-        name: createCustomerDto.name,
-        phone: createCustomerDto.phone,
-        metadata: createCustomerDto.metadata,
-      });
+      const customer = await this.executeWithCircuitBreaker(() =>
+        this.stripe.customers.create({
+          email: createCustomerDto.email,
+          name: createCustomerDto.name,
+          phone: createCustomerDto.phone,
+          metadata: createCustomerDto.metadata,
+        }),
+      );
 
       this.logger.info(`Customer created: ${customer.id}`);
       return customer;
@@ -98,8 +146,9 @@ export class PaymentsService {
         paymentIntentData.description = createPaymentIntentDto.description;
       }
 
-      const paymentIntent =
-        await this.stripe.paymentIntents.create(paymentIntentData);
+      const paymentIntent = await this.executeWithCircuitBreaker(() =>
+        this.stripe.paymentIntents.create(paymentIntentData),
+      );
 
       this.logger.info(`Payment intent created: ${paymentIntent.id}`);
       return paymentIntent;
@@ -162,7 +211,9 @@ export class PaymentsService {
         sessionData.customer = createCheckoutSessionDto.customerId;
       }
 
-      const session = await this.stripe.checkout.sessions.create(sessionData);
+      const session = await this.executeWithCircuitBreaker(() =>
+        this.stripe.checkout.sessions.create(sessionData),
+      );
 
       this.logger.info(`Checkout session created: ${session.id}`);
       return session;

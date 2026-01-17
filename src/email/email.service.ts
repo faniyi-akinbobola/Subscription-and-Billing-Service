@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import * as nodemailer from 'nodemailer';
+import CircuitBreaker from 'opossum';
+import { CircuitBreakerService } from '../common/circuit-breaker.service';
 
 /**
  * Interface for receipt email data structure
@@ -76,17 +78,21 @@ export interface RenewalReminderData {
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private emailCircuitBreaker: CircuitBreaker<any[], any>;
 
   /**
    * Initialize the email service with SMTP configuration
    * @param configService - NestJS configuration service for environment variables
+   * @param circuitBreakerService - Circuit breaker service for email resilience
    */
   constructor(
     @InjectPinoLogger(EmailService.name)
     private readonly logger: PinoLogger,
     private configService: ConfigService,
+    private circuitBreakerService: CircuitBreakerService,
   ) {
     this.initializeTransporter();
+    this.setupCircuitBreaker();
   }
 
   /**
@@ -120,6 +126,39 @@ export class EmailService {
     // });
   }
 
+  /**
+   * Setup circuit breaker for email sending operations
+   * Protects against email service outages and cascading failures
+   * 
+   * @private
+   */
+  private setupCircuitBreaker() {
+    this.emailCircuitBreaker = this.circuitBreakerService.createBreaker(
+      'email-smtp',
+      async (mailOptions: nodemailer.SendMailOptions) => {
+        return await this.transporter.sendMail(mailOptions);
+      },
+      {
+        timeout: 15000, // 15 seconds timeout for email sending
+        errorThresholdPercentage: 50, // Open circuit if 50% fail
+        resetTimeout: 60000, // Try again after 1 minute
+        volumeThreshold: 3, // Need at least 3 requests before opening
+      },
+    );
+
+    // Fallback: Log the email attempt when circuit is open
+    this.emailCircuitBreaker.fallback(async (mailOptions) => {
+      this.logger.warn(
+        `Email circuit breaker open - email not sent to ${mailOptions.to}`,
+      );
+      return {
+        fallback: true,
+        message:
+          'Email service temporarily unavailable. Email will be queued for retry.',
+      };
+    });
+  }
+
   async sendReceiptEmail(data: ReceiptEmailData): Promise<void> {
     try {
       const mailOptions = {
@@ -129,7 +168,16 @@ export class EmailService {
         html: this.generateReceiptEmailTemplate(data),
       };
 
-      await this.transporter.sendMail(mailOptions);
+      // Use circuit breaker for email sending
+      const result = await this.emailCircuitBreaker.fire(mailOptions);
+      
+      if (result.fallback) {
+        this.logger.warn(
+          `Receipt email fallback triggered for ${data.customerEmail}`,
+        );
+        return; // Don't throw error when circuit is open
+      }
+
       this.logger.info(
         `Receipt email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`,
       );
@@ -151,7 +199,16 @@ export class EmailService {
         html: this.generateRenewalReminderTemplate(data),
       };
 
-      await this.transporter.sendMail(mailOptions);
+      // Use circuit breaker for email sending
+      const result = await this.emailCircuitBreaker.fire(mailOptions);
+      
+      if (result.fallback) {
+        this.logger.warn(
+          `Renewal reminder email fallback triggered for ${data.customerEmail}`,
+        );
+        return; // Don't throw error when circuit is open
+      }
+
       this.logger.info(
         `Renewal reminder sent to ${data.customerEmail} for subscription ${data.subscriptionId}`,
       );
