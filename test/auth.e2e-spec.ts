@@ -9,7 +9,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/signup (POST)', () => {
     it('should create a new user', () => {
       return request(baseUrl)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           email: testEmail,
           password: 'Test123!@#',
@@ -28,7 +28,7 @@ describe('Auth (e2e)', () => {
 
     it('should fail with duplicate email', () => {
       return request(baseUrl)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           email: testEmail,
           password: 'Test123!@#',
@@ -42,7 +42,7 @@ describe('Auth (e2e)', () => {
 
     it('should fail with invalid email', () => {
       return request(baseUrl)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           email: 'invalid-email',
           password: 'Test123!@#',
@@ -52,7 +52,7 @@ describe('Auth (e2e)', () => {
 
     it('should fail with weak password', () => {
       return request(baseUrl)
-        .post('/auth/signup')
+        .post('/v1/auth/signup')
         .send({
           email: `test2-${Date.now()}@example.com`,
           password: '123',
@@ -64,7 +64,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/signin (POST)', () => {
     it('should sign in successfully', () => {
       return request(baseUrl)
-        .post('/auth/signin')
+        .post('/v1/auth/signin')
         .send({
           email: testEmail,
           password: 'Test123!@#',
@@ -80,7 +80,7 @@ describe('Auth (e2e)', () => {
 
     it('should fail with wrong password', () => {
       return request(baseUrl)
-        .post('/auth/signin')
+        .post('/v1/auth/signin')
         .send({
           email: testEmail,
           password: 'WrongPassword123!',
@@ -90,7 +90,7 @@ describe('Auth (e2e)', () => {
 
     it('should fail with non-existent email', () => {
       return request(baseUrl)
-        .post('/auth/signin')
+        .post('/v1/auth/signin')
         .send({
           email: 'nonexistent@example.com',
           password: 'Test123!@#',
@@ -102,7 +102,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/profile (GET)', () => {
     it('should get user profile', () => {
       return request(baseUrl)
-        .get('/auth/profile')
+        .get('/v1/auth/profile')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -113,12 +113,12 @@ describe('Auth (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(baseUrl).get('/auth/profile').expect(401);
+      return request(baseUrl).get('/v1/auth/profile').expect(401);
     });
 
     it('should fail with invalid token', () => {
       return request(baseUrl)
-        .get('/auth/profile')
+        .get('/v1/auth/profile')
         .set('Authorization', 'Bearer invalid_token')
         .expect(401);
     });
@@ -127,7 +127,7 @@ describe('Auth (e2e)', () => {
   describe('/auth/signout (POST)', () => {
     it('should sign out successfully', () => {
       return request(baseUrl)
-        .post('/auth/signout')
+        .post('/v1/auth/signout')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -137,7 +137,7 @@ describe('Auth (e2e)', () => {
 
     it('should invalidate the old token', () => {
       return request(baseUrl)
-        .get('/auth/profile')
+        .get('/v1/auth/profile')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(401);
     });

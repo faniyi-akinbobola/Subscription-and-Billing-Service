@@ -10,28 +10,28 @@ describe('Plans (e2e)', () => {
 
   beforeAll(async () => {
     // Create admin user
-    await request(baseUrl).post('/auth/signup').send({
+    await request(baseUrl).post('/v1/auth/signup').send({
       email: adminEmail,
       password: 'Admin123!@#',
       admin: true,
     });
 
     // Sign in as admin
-    const adminRes = await request(baseUrl).post('/auth/signin').send({
+    const adminRes = await request(baseUrl).post('/v1/auth/signin').send({
       email: adminEmail,
       password: 'Admin123!@#',
     });
     adminToken = adminRes.body.access_token;
 
     // Create regular user
-    await request(baseUrl).post('/auth/signup').send({
+    await request(baseUrl).post('/v1/auth/signup').send({
       email: userEmail,
       password: 'User123!@#',
       admin: false,
     });
 
     // Sign in as user
-    const userRes = await request(baseUrl).post('/auth/signin').send({
+    const userRes = await request(baseUrl).post('/v1/auth/signin').send({
       email: userEmail,
       password: 'User123!@#',
     });
@@ -41,7 +41,7 @@ describe('Plans (e2e)', () => {
   describe('/plans/create (POST)', () => {
     it('should create a plan as admin', () => {
       return request(baseUrl)
-        .post('/plans/create')
+        .post('/v1/plans/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: `Test Plan ${Date.now()}`,
@@ -60,7 +60,7 @@ describe('Plans (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .post('/plans/create')
+        .post('/v1/plans/create')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           name: `Test Plan 2 ${Date.now()}`,
@@ -73,7 +73,7 @@ describe('Plans (e2e)', () => {
 
     it('should fail with duplicate plan name', () => {
       return request(baseUrl)
-        .post('/plans/create')
+        .post('/v1/plans/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: `Test Plan ${Date.now()}`,
@@ -84,7 +84,7 @@ describe('Plans (e2e)', () => {
         .expect(201);
 
       return request(baseUrl)
-        .post('/plans/create')
+        .post('/v1/plans/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: `Test Plan ${Date.now()}`,
@@ -99,7 +99,7 @@ describe('Plans (e2e)', () => {
       // Skip this test as negative prices may be allowed at DTO level
       // The business logic validation might happen at service level
       return request(baseUrl)
-        .post('/plans/create')
+        .post('/v1/plans/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           name: `Invalid Plan ${Date.now()}`,
@@ -114,7 +114,7 @@ describe('Plans (e2e)', () => {
   describe('/plans (GET)', () => {
     it('should get all plans', () => {
       return request(baseUrl)
-        .get('/plans')
+        .get('/v1/plans')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -127,7 +127,7 @@ describe('Plans (e2e)', () => {
   describe('/plans/:id (GET)', () => {
     it('should get plan by id', () => {
       return request(baseUrl)
-        .get(`/plans/${planId}`)
+        .get(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -139,7 +139,7 @@ describe('Plans (e2e)', () => {
 
     it('should fail with invalid id', () => {
       return request(baseUrl)
-        .get('/plans/invalid-uuid')
+        .get('/v1/plans/invalid-uuid')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(500); // Invalid UUID causes database error
     });
@@ -148,7 +148,7 @@ describe('Plans (e2e)', () => {
   describe('/plans/:id (PATCH)', () => {
     it('should update plan as admin', () => {
       return request(baseUrl)
-        .patch(`/plans/${planId}`)
+        .patch(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           price: 3999,
@@ -166,7 +166,7 @@ describe('Plans (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .patch(`/plans/${planId}`)
+        .patch(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           price: 4999,
@@ -178,21 +178,21 @@ describe('Plans (e2e)', () => {
   describe('/plans/:id (DELETE)', () => {
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .delete(`/plans/${planId}`)
+        .delete(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should delete plan as admin', () => {
       return request(baseUrl)
-        .delete(`/plans/${planId}`)
+        .delete(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
     });
 
     it('should fail to get deleted plan', () => {
       return request(baseUrl)
-        .get(`/plans/${planId}`)
+        .get(`/v1/plans/${planId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });

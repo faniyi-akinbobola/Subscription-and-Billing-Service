@@ -11,7 +11,7 @@ describe('Payments (e2e)', () => {
   beforeAll(async () => {
     // Create and authenticate a user
     const signup = await request(baseUrl)
-      .post('/auth/signup')
+      .post('/v1/auth/signup')
       .send({
         email: `payment-test-${Date.now()}@example.com`,
         password: 'PaymentTest123!',
@@ -20,7 +20,7 @@ describe('Payments (e2e)', () => {
       });
     userId = signup.body.user.id;
 
-    const signin = await request(baseUrl).post('/auth/signin').send({
+    const signin = await request(baseUrl).post('/v1/auth/signin').send({
       email: signup.body.user.email,
       password: 'PaymentTest123!',
     });
@@ -30,7 +30,7 @@ describe('Payments (e2e)', () => {
   describe('/payments/customers (POST)', () => {
     it('should create a Stripe customer', () => {
       return request(baseUrl)
-        .post('/payments/customers')
+        .post('/v1/payments/customers')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           email: `customer-${Date.now()}@example.com`,
@@ -48,7 +48,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail without authentication', () => {
       return request(baseUrl)
-        .post('/payments/customers')
+        .post('/v1/payments/customers')
         .send({
           email: `test-${Date.now()}@example.com`,
           name: 'Test',
@@ -58,7 +58,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail with invalid email', () => {
       return request(baseUrl)
-        .post('/payments/customers')
+        .post('/v1/payments/customers')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           email: 'not-an-email',
@@ -71,7 +71,7 @@ describe('Payments (e2e)', () => {
   describe('/payments/customers/:customerId (GET)', () => {
     it('should get customer by id', () => {
       return request(baseUrl)
-        .get(`/payments/customers/${customerId}`)
+        .get(`/v1/payments/customers/${customerId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -83,13 +83,13 @@ describe('Payments (e2e)', () => {
 
     it('should fail without authentication', () => {
       return request(baseUrl)
-        .get(`/payments/customers/${customerId}`)
+        .get(`/v1/payments/customers/${customerId}`)
         .expect(401);
     });
 
     it('should fail with non-existent customer id', () => {
       return request(baseUrl)
-        .get('/payments/customers/cus_nonexistent')
+        .get('/v1/payments/customers/cus_nonexistent')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // Stripe returns 400 for invalid/non-existent resource IDs
     });
@@ -98,7 +98,7 @@ describe('Payments (e2e)', () => {
   describe('/payments/payment-intents (POST)', () => {
     it('should create a payment intent', () => {
       return request(baseUrl)
-        .post('/payments/payment-intents')
+        .post('/v1/payments/payment-intents')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           amount: 1000, // $10.00
@@ -118,7 +118,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail without authentication', () => {
       return request(baseUrl)
-        .post('/payments/payment-intents')
+        .post('/v1/payments/payment-intents')
         .send({
           amount: 1000,
           currency: 'usd',
@@ -128,7 +128,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail with invalid amount', () => {
       return request(baseUrl)
-        .post('/payments/payment-intents')
+        .post('/v1/payments/payment-intents')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           amount: -100, // Negative amount
@@ -139,7 +139,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail with invalid currency', () => {
       return request(baseUrl)
-        .post('/payments/payment-intents')
+        .post('/v1/payments/payment-intents')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           amount: 1000,
@@ -152,7 +152,7 @@ describe('Payments (e2e)', () => {
   describe('/payments/payment-intents/:id (GET)', () => {
     it('should get payment intent by id', () => {
       return request(baseUrl)
-        .get(`/payments/payment-intents/${paymentIntentId}`)
+        .get(`/v1/payments/payment-intents/${paymentIntentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -165,13 +165,13 @@ describe('Payments (e2e)', () => {
 
     it('should fail without authentication', () => {
       return request(baseUrl)
-        .get(`/payments/payment-intents/${paymentIntentId}`)
+        .get(`/v1/payments/payment-intents/${paymentIntentId}`)
         .expect(401);
     });
 
     it('should fail with non-existent payment intent id', () => {
       return request(baseUrl)
-        .get('/payments/payment-intents/pi_nonexistent')
+        .get('/v1/payments/payment-intents/pi_nonexistent')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // Stripe returns 400 for invalid/non-existent resource IDs
     });
@@ -182,7 +182,7 @@ describe('Payments (e2e)', () => {
 
     it('should create a price', () => {
       return request(baseUrl)
-        .post('/payments/prices')
+        .post('/v1/payments/prices')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           amount: 1999, // $19.99
@@ -202,7 +202,7 @@ describe('Payments (e2e)', () => {
 
     it('should list all prices', () => {
       return request(baseUrl)
-        .get('/payments/prices')
+        .get('/v1/payments/prices')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -219,7 +219,7 @@ describe('Payments (e2e)', () => {
 
     it('should fail to create price without authentication', () => {
       return request(baseUrl)
-        .post('/payments/prices')
+        .post('/v1/payments/prices')
         .send({
           amount: 1999,
           currency: 'usd',
@@ -232,7 +232,7 @@ describe('Payments (e2e)', () => {
     describe('Checkout Sessions using created price', () => {
       it('should create a checkout session', () => {
         return request(baseUrl)
-          .post('/payments/checkout-sessions')
+          .post('/v1/payments/checkout-sessions')
           .set('Authorization', `Bearer ${authToken}`)
           .send({
             amount: 1999, // $19.99
@@ -253,7 +253,7 @@ describe('Payments (e2e)', () => {
 
       it('should fail without authentication', () => {
         return request(baseUrl)
-          .post('/payments/checkout-sessions')
+          .post('/v1/payments/checkout-sessions')
           .send({
             amount: 1999,
             currency: 'usd',
@@ -270,7 +270,7 @@ describe('Payments (e2e)', () => {
       // NOTE: Creating a subscription requires a valid payment method attached to the customer
       // This would require Stripe test cards and payment method setup
       return request(baseUrl)
-        .post('/payments/subscriptions')
+        .post('/v1/payments/subscriptions')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           customerId: customerId,
@@ -286,7 +286,7 @@ describe('Payments (e2e)', () => {
 
     it.skip('should get Stripe subscription by id - SKIPPED: Requires subscription creation', () => {
       return request(baseUrl)
-        .get(`/payments/subscriptions/${subscriptionId}`)
+        .get(`/v1/payments/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -297,7 +297,7 @@ describe('Payments (e2e)', () => {
 
     it.skip('should update Stripe subscription - SKIPPED: Requires subscription creation', () => {
       return request(baseUrl)
-        .patch(`/payments/subscriptions/${subscriptionId}`)
+        .patch(`/v1/payments/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           priceId: 'price_new_test',
@@ -307,7 +307,7 @@ describe('Payments (e2e)', () => {
 
     it.skip('should cancel Stripe subscription - SKIPPED: Requires subscription creation', () => {
       return request(baseUrl)
-        .delete(`/payments/subscriptions/${subscriptionId}`)
+        .delete(`/v1/payments/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -319,7 +319,7 @@ describe('Payments (e2e)', () => {
   describe('/payments/invoices', () => {
     it('should list all invoices', () => {
       return request(baseUrl)
-        .get('/payments/invoices')
+        .get('/v1/payments/invoices')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
@@ -329,14 +329,14 @@ describe('Payments (e2e)', () => {
     });
 
     it('should fail without authentication', () => {
-      return request(baseUrl).get('/payments/invoices').expect(401);
+      return request(baseUrl).get('/v1/payments/invoices').expect(401);
     });
   });
 
   describe('/payments/return (GET)', () => {
     it('should handle payment return callback', () => {
       return request(baseUrl)
-        .get('/payments/return')
+        .get('/v1/payments/return')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {

@@ -12,21 +12,21 @@ describe('Subscriptions (e2e)', () => {
 
   beforeAll(async () => {
     // Create admin user
-    await request(baseUrl).post('/auth/signup').send({
+    await request(baseUrl).post('/v1/auth/signup').send({
       email: adminEmail,
       password: 'Admin123!@#',
       admin: true,
     });
 
     // Sign in as admin
-    const adminRes = await request(baseUrl).post('/auth/signin').send({
+    const adminRes = await request(baseUrl).post('/v1/auth/signin').send({
       email: adminEmail,
       password: 'Admin123!@#',
     });
     adminToken = adminRes.body.access_token;
 
     // Create regular user
-    const signupRes = await request(baseUrl).post('/auth/signup').send({
+    const signupRes = await request(baseUrl).post('/v1/auth/signup').send({
       email: userEmail,
       password: 'User123!@#',
       admin: false,
@@ -34,7 +34,7 @@ describe('Subscriptions (e2e)', () => {
     userId = signupRes.body.user.id;
 
     // Sign in as user
-    const userRes = await request(baseUrl).post('/auth/signin').send({
+    const userRes = await request(baseUrl).post('/v1/auth/signin').send({
       email: userEmail,
       password: 'User123!@#',
     });
@@ -42,7 +42,7 @@ describe('Subscriptions (e2e)', () => {
 
     // Create a plan
     const planRes = await request(baseUrl)
-      .post('/plans/create')
+      .post('/v1/plans/create')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: `Sub Test Plan ${Date.now()}`,
@@ -56,7 +56,7 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions/create (POST)', () => {
     it('should create subscription as admin', () => {
       return request(baseUrl)
-        .post('/subscriptions/create')
+        .post('/v1/subscriptions/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           userId: userId,
@@ -76,7 +76,7 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .post('/subscriptions/create')
+        .post('/v1/subscriptions/create')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           userId: userId,
@@ -87,7 +87,7 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail with invalid userId', () => {
       return request(baseUrl)
-        .post('/subscriptions/create')
+        .post('/v1/subscriptions/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           userId: 'invalid-uuid',
@@ -98,7 +98,7 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail with invalid planId', () => {
       return request(baseUrl)
-        .post('/subscriptions/create')
+        .post('/v1/subscriptions/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           userId: userId,
@@ -111,7 +111,7 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions (GET)', () => {
     it('should get all subscriptions as admin', () => {
       return request(baseUrl)
-        .get('/subscriptions')
+        .get('/v1/subscriptions')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -124,14 +124,14 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .get('/subscriptions')
+        .get('/v1/subscriptions')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should support pagination', () => {
       return request(baseUrl)
-        .get('/subscriptions?page=1&limit=10')
+        .get('/v1/subscriptions?page=1&limit=10')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -145,7 +145,7 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions/me (GET)', () => {
     it('should get user own subscriptions', () => {
       return request(baseUrl)
-        .get('/subscriptions/me')
+        .get('/v1/subscriptions/me')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200)
         .expect((res) => {
@@ -154,14 +154,14 @@ describe('Subscriptions (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(baseUrl).get('/subscriptions/me').expect(401);
+      return request(baseUrl).get('/v1/subscriptions/me').expect(401);
     });
   });
 
   describe('/subscriptions/:id (GET)', () => {
     it('should get subscription by id as admin', () => {
       return request(baseUrl)
-        .get(`/subscriptions/${subscriptionId}`)
+        .get(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -173,14 +173,14 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .get(`/subscriptions/${subscriptionId}`)
+        .get(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should fail with invalid id', () => {
       return request(baseUrl)
-        .get('/subscriptions/invalid-uuid')
+        .get('/v1/subscriptions/invalid-uuid')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(400); // Changed from 404 - invalid UUID causes validation error
     });
@@ -189,7 +189,7 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions/:id (PATCH)', () => {
     it.skip('should update subscription as admin - SKIPPED: Known issue with subscription relations', () => {
       return request(baseUrl)
-        .patch(`/subscriptions/${subscriptionId}`)
+        .patch(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           isAutoRenew: false,
@@ -204,7 +204,7 @@ describe('Subscriptions (e2e)', () => {
     it('should allow user to update their own subscription', () => {
       // This endpoint allows users to update their own subscriptions
       return request(baseUrl)
-        .patch(`/subscriptions/${subscriptionId}`)
+        .patch(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           isAutoRenew: true,
@@ -219,7 +219,7 @@ describe('Subscriptions (e2e)', () => {
     beforeAll(async () => {
       // Create a fresh subscription specifically for cancel testing
       const response = await request(baseUrl)
-        .post('/subscriptions/create')
+        .post('/v1/subscriptions/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           userId: userId,
@@ -230,7 +230,7 @@ describe('Subscriptions (e2e)', () => {
 
     it.skip('should cancel subscription as admin - SKIPPED: Known issue with subscription relations', () => {
       return request(baseUrl)
-        .patch(`/subscriptions/${cancelTestSubscriptionId}/cancel`)
+        .patch(`/v1/subscriptions/${cancelTestSubscriptionId}/cancel`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -242,7 +242,7 @@ describe('Subscriptions (e2e)', () => {
 
     it.skip('should fail to cancel already cancelled subscription - SKIPPED: Depends on previous test', () => {
       return request(baseUrl)
-        .patch(`/subscriptions/${cancelTestSubscriptionId}/cancel`)
+        .patch(`/v1/subscriptions/${cancelTestSubscriptionId}/cancel`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(400);
     });
@@ -251,7 +251,7 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions/stats (GET)', () => {
     it('should get subscription statistics as admin', () => {
       return request(baseUrl)
-        .get('/subscriptions/stats')
+        .get('/v1/subscriptions/stats')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -264,7 +264,7 @@ describe('Subscriptions (e2e)', () => {
 
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .get('/subscriptions/stats')
+        .get('/v1/subscriptions/stats')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
@@ -273,21 +273,21 @@ describe('Subscriptions (e2e)', () => {
   describe('/subscriptions/:id (DELETE)', () => {
     it('should fail without admin token', () => {
       return request(baseUrl)
-        .delete(`/subscriptions/${subscriptionId}`)
+        .delete(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should delete subscription as admin', () => {
       return request(baseUrl)
-        .delete(`/subscriptions/${subscriptionId}`)
+        .delete(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
     });
 
     it('should fail to get deleted subscription', () => {
       return request(baseUrl)
-        .get(`/subscriptions/${subscriptionId}`)
+        .get(`/v1/subscriptions/${subscriptionId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });

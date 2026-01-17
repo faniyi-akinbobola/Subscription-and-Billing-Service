@@ -11,7 +11,7 @@ describe('Users (e2e)', () => {
   beforeAll(async () => {
     // Create admin user with admin flag set to true
     const adminSignup = await request(baseUrl)
-      .post('/auth/signup')
+      .post('/v1/auth/signup')
       .send({
         email: `admin-users-${Date.now()}@example.com`,
         password: 'AdminPass123!',
@@ -21,7 +21,7 @@ describe('Users (e2e)', () => {
       });
     adminUserId = adminSignup.body.user.id;
 
-    const adminSignin = await request(baseUrl).post('/auth/signin').send({
+    const adminSignin = await request(baseUrl).post('/v1/auth/signin').send({
       email: adminSignup.body.user.email,
       password: 'AdminPass123!',
     });
@@ -29,7 +29,7 @@ describe('Users (e2e)', () => {
 
     // Create regular user without admin flag
     const userSignup = await request(baseUrl)
-      .post('/auth/signup')
+      .post('/v1/auth/signup')
       .send({
         email: `user-users-${Date.now()}@example.com`,
         password: 'UserPass123!',
@@ -38,7 +38,7 @@ describe('Users (e2e)', () => {
       });
     regularUserId = userSignup.body.user.id;
 
-    const userSignin = await request(baseUrl).post('/auth/signin').send({
+    const userSignin = await request(baseUrl).post('/v1/auth/signin').send({
       email: userSignup.body.user.email,
       password: 'UserPass123!',
     });
@@ -48,7 +48,7 @@ describe('Users (e2e)', () => {
   describe('/users/create (POST)', () => {
     it('should create a new user with authentication', () => {
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: `newuser-${Date.now()}@example.com`,
@@ -68,7 +68,7 @@ describe('Users (e2e)', () => {
 
     it('should fail without authentication', () => {
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .send({
           email: `test-${Date.now()}@example.com`,
           password: 'Password123!',
@@ -83,7 +83,7 @@ describe('Users (e2e)', () => {
 
       // Create first user
       await request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: duplicateEmail,
@@ -94,7 +94,7 @@ describe('Users (e2e)', () => {
 
       // Try to create with same email
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: duplicateEmail,
@@ -107,7 +107,7 @@ describe('Users (e2e)', () => {
 
     it('should fail with invalid email', () => {
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: 'not-an-email',
@@ -120,7 +120,7 @@ describe('Users (e2e)', () => {
 
     it('should fail with weak password', () => {
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: `test-${Date.now()}@example.com`,
@@ -133,7 +133,7 @@ describe('Users (e2e)', () => {
 
     it('should fail without required fields', () => {
       return request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: `test-${Date.now()}@example.com`,
@@ -146,7 +146,7 @@ describe('Users (e2e)', () => {
   describe('/users (GET)', () => {
     it('should get all users as admin', () => {
       return request(baseUrl)
-        .get('/users')
+        .get('/v1/users')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -161,20 +161,20 @@ describe('Users (e2e)', () => {
 
     it('should fail for non-admin users', () => {
       return request(baseUrl)
-        .get('/users')
+        .get('/v1/users')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should fail without token', () => {
-      return request(baseUrl).get('/users').expect(401);
+      return request(baseUrl).get('/v1/users').expect(401);
     });
   });
 
   describe('/users/:id (GET)', () => {
     it('should get user by id as admin', () => {
       return request(baseUrl)
-        .get(`/users/${regularUserId}`)
+        .get(`/v1/users/${regularUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -186,27 +186,27 @@ describe('Users (e2e)', () => {
 
     it('should fail for non-admin users', () => {
       return request(baseUrl)
-        .get(`/users/${adminUserId}`)
+        .get(`/v1/users/${adminUserId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should fail with non-existent user id', () => {
       return request(baseUrl)
-        .get('/users/00000000-0000-0000-0000-000000000000')
+        .get('/v1/users/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
 
     it('should fail with invalid uuid', () => {
       return request(baseUrl)
-        .get('/users/invalid-uuid')
+        .get('/v1/users/invalid-uuid')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(500); // Invalid UUID causes database error
     });
 
     it('should fail without authentication', () => {
-      return request(baseUrl).get(`/users/${regularUserId}`).expect(401);
+      return request(baseUrl).get(`/v1/users/${regularUserId}`).expect(401);
     });
   });
 
@@ -216,7 +216,7 @@ describe('Users (e2e)', () => {
     beforeAll(async () => {
       // Create a user specifically for update testing
       const response = await request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: `update-test-${Date.now()}@example.com`,
@@ -229,7 +229,7 @@ describe('Users (e2e)', () => {
 
     it('should update user firstName', () => {
       return request(baseUrl)
-        .patch(`/users/${updateTestUserId}`)
+        .patch(`/v1/users/${updateTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           firstName: 'Updated',
@@ -243,7 +243,7 @@ describe('Users (e2e)', () => {
 
     it('should update user lastName', () => {
       return request(baseUrl)
-        .patch(`/users/${updateTestUserId}`)
+        .patch(`/v1/users/${updateTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           lastName: 'Modified',
@@ -257,7 +257,7 @@ describe('Users (e2e)', () => {
     it('should update user email', () => {
       const newEmail = `updated-${Date.now()}@example.com`;
       return request(baseUrl)
-        .patch(`/users/${updateTestUserId}`)
+        .patch(`/v1/users/${updateTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: newEmail,
@@ -270,7 +270,7 @@ describe('Users (e2e)', () => {
 
     it('should update multiple fields at once', () => {
       return request(baseUrl)
-        .patch(`/users/${updateTestUserId}`)
+        .patch(`/v1/users/${updateTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           firstName: 'Multi',
@@ -285,7 +285,7 @@ describe('Users (e2e)', () => {
 
     it('should fail with invalid email format', () => {
       return request(baseUrl)
-        .patch(`/users/${updateTestUserId}`)
+        .patch(`/v1/users/${updateTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: 'not-an-email',
@@ -295,7 +295,7 @@ describe('Users (e2e)', () => {
 
     it('should fail with non-existent user id', () => {
       return request(baseUrl)
-        .patch('/users/00000000-0000-0000-0000-000000000000')
+        .patch('/v1/users/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           firstName: 'Test',
@@ -310,7 +310,7 @@ describe('Users (e2e)', () => {
     beforeAll(async () => {
       // Create a user specifically for deletion testing
       const response = await request(baseUrl)
-        .post('/users/create')
+        .post('/v1/users/create')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           email: `delete-test-${Date.now()}@example.com`,
@@ -323,14 +323,14 @@ describe('Users (e2e)', () => {
 
     it('should fail for non-admin users', () => {
       return request(baseUrl)
-        .delete(`/users/${deleteTestUserId}`)
+        .delete(`/v1/users/${deleteTestUserId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
 
     it('should delete user as admin', () => {
       return request(baseUrl)
-        .delete(`/users/${deleteTestUserId}`)
+        .delete(`/v1/users/${deleteTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200)
         .expect((res) => {
@@ -340,14 +340,14 @@ describe('Users (e2e)', () => {
 
     it('should fail to get deleted user', () => {
       return request(baseUrl)
-        .get(`/users/${deleteTestUserId}`)
+        .get(`/v1/users/${deleteTestUserId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
 
     it('should fail with non-existent user id', () => {
       return request(baseUrl)
-        .delete('/users/00000000-0000-0000-0000-000000000000')
+        .delete('/v1/users/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
     });
@@ -356,30 +356,30 @@ describe('Users (e2e)', () => {
   describe('Authorization checks', () => {
     it('should require authentication for all endpoints', async () => {
       // Test all endpoints without token
-      await request(baseUrl).get('/users').expect(401);
-      await request(baseUrl).get(`/users/${regularUserId}`).expect(401);
-      await request(baseUrl).post('/users/create').send({}).expect(401);
+      await request(baseUrl).get('/v1/users').expect(401);
+      await request(baseUrl).get(`/v1/users/${regularUserId}`).expect(401);
+      await request(baseUrl).post('/v1/users/create').send({}).expect(401);
       await request(baseUrl)
-        .patch(`/users/${regularUserId}`)
+        .patch(`/v1/users/${regularUserId}`)
         .send({})
         .expect(401);
-      await request(baseUrl).delete(`/users/${regularUserId}`).expect(401);
+      await request(baseUrl).delete(`/v1/users/${regularUserId}`).expect(401);
     });
 
     it('should enforce admin-only access for restricted endpoints', async () => {
       // Test admin-only endpoints with regular user token
       await request(baseUrl)
-        .get('/users')
+        .get('/v1/users')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
 
       await request(baseUrl)
-        .get(`/users/${adminUserId}`)
+        .get(`/v1/users/${adminUserId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
 
       await request(baseUrl)
-        .delete(`/users/${regularUserId}`)
+        .delete(`/v1/users/${regularUserId}`)
         .set('Authorization', `Bearer ${userToken}`)
         .expect(403);
     });
