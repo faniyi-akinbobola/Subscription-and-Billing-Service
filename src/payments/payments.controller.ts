@@ -27,7 +27,7 @@ import {
   CreateCheckoutSessionDto,
 } from './dto';
 
-@Controller('payments')
+@Controller({ path: 'payments', version: '1' })
 @UseGuards(JwtAuthGuard, PaymentThrottlerGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}

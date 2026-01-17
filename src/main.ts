@@ -6,7 +6,7 @@ if (typeof (globalThis as any).crypto === 'undefined') {
 
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import morgan from 'morgan';
 import { AppModule } from './app.module';
@@ -38,6 +38,12 @@ async function bootstrap() {
     }),
   );
 
+  // Enable API Versioning (URI versioning: /v1/resource)
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1', // Default to v1 if no version specified
+  });
+
   // Enable CORS for development
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
@@ -57,12 +63,19 @@ async function bootstrap() {
       - 📧 Email Notifications
       - 📊 Billing Management
       - 🔄 Subscription Lifecycle
+      - 🔄 Redis Caching
+      - 🛡️ Rate Limiting
+      - 🔑 Idempotency Keys
+      
+      ## API Versioning
+      All endpoints are versioned. Current version: v1
+      Base URL: /v1/
       
       ## Authentication
       Most endpoints require JWT authentication. First sign up/sign in to get your access token.
     `,
     )
-    .setVersion('1.0')
+    .setVersion('1.0.0')
     .addTag('Authentication', 'User signup, signin, and profile management')
     .addTag('Payments', 'Stripe integration for payments and subscriptions')
     .addTag('Billing', 'Billing history and email notifications')

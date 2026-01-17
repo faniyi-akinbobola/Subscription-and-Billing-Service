@@ -22,7 +22,7 @@ import { BillingsService } from './billings.service';
 import { EmailService } from '../email/email.service';
 
 @ApiTags('Billing')
-@Controller('billings')
+@Controller({ path: 'billings', version: '1' })
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 export class BillingsController {

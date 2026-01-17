@@ -17,7 +17,7 @@ import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dtos/create-plan.dto';
 import { UpdatePlanDto } from './dtos/update-plan.dto';
 
-@Controller('plans')
+@Controller({ path: 'plans', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class PlansController {
   constructor(private readonly plansService: PlansService) {}

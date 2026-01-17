@@ -24,7 +24,7 @@ import { FindAllSubscriptionsQuery } from './dtos/find-all-subscriptions-query.d
 import { ChangePlanDto } from './dtos/change-plan.dto';
 import { RenewPlanDto } from './dtos/renew-plan.dto';
 
-@Controller('subscriptions')
+@Controller({ path: 'subscriptions', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
