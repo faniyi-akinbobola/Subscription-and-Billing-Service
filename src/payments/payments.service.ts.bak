@@ -54,7 +54,7 @@ export class PaymentsService {
         metadata: createCustomerDto.metadata,
       });
 
-      this.logger.info(`Customer created: ${customer.id}`);
+      this.logger.log(`Customer created: ${customer.id}`);
       return customer;
     } catch (error) {
       this.logger.error(`Failed to create customer: ${error.message}`);
@@ -105,7 +105,7 @@ export class PaymentsService {
       const paymentIntent =
         await this.stripe.paymentIntents.create(paymentIntentData);
 
-      this.logger.info(`Payment intent created: ${paymentIntent.id}`);
+      this.logger.log(`Payment intent created: ${paymentIntent.id}`);
       return paymentIntent;
     } catch (error) {
       this.logger.error(`Failed to create payment intent: ${error.message}`);
@@ -127,7 +127,7 @@ export class PaymentsService {
         },
       );
 
-      this.logger.info(`Payment intent confirmed: ${paymentIntent.id}`);
+      this.logger.log(`Payment intent confirmed: ${paymentIntent.id}`);
       return paymentIntent;
     } catch (error) {
       this.logger.error(`Failed to confirm payment intent: ${error.message}`);
@@ -168,7 +168,7 @@ export class PaymentsService {
 
       const session = await this.stripe.checkout.sessions.create(sessionData);
 
-      this.logger.info(`Checkout session created: ${session.id}`);
+      this.logger.log(`Checkout session created: ${session.id}`);
       return session;
     } catch (error) {
       this.logger.error(`Failed to create checkout session: ${error.message}`);
@@ -219,7 +219,7 @@ export class PaymentsService {
       const subscription =
         await this.stripe.subscriptions.create(subscriptionData);
 
-      this.logger.info(`Subscription created: ${subscription.id}`);
+      this.logger.log(`Subscription created: ${subscription.id}`);
       return subscription;
     } catch (error) {
       this.logger.error(`Failed to create subscription: ${error.message}`);
@@ -262,7 +262,7 @@ export class PaymentsService {
         },
       );
 
-      this.logger.info(`Subscription updated: ${subscriptionId}`);
+      this.logger.log(`Subscription updated: ${subscriptionId}`);
       return updatedSubscription;
     } catch (error) {
       this.logger.error(`Failed to update subscription: ${error.message}`);
@@ -278,7 +278,7 @@ export class PaymentsService {
     try {
       const subscription =
         await this.stripe.subscriptions.cancel(subscriptionId);
-      this.logger.info(`Subscription cancelled: ${subscriptionId}`);
+      this.logger.log(`Subscription cancelled: ${subscriptionId}`);
       return subscription;
     } catch (error) {
       this.logger.error(`Failed to cancel subscription: ${error.message}`);
@@ -313,7 +313,7 @@ export class PaymentsService {
 
       const price = await this.stripe.prices.create(priceData);
 
-      this.logger.info(`Price created: ${price.id}`);
+      this.logger.log(`Price created: ${price.id}`);
       return price;
     } catch (error) {
       this.logger.error(`Failed to create price: ${error.message}`);
@@ -347,7 +347,7 @@ export class PaymentsService {
         },
       );
 
-      this.logger.info(
+      this.logger.log(
         `Payment method attached: ${paymentMethodId} to customer: ${customerId}`,
       );
       return paymentMethod;
@@ -421,7 +421,7 @@ export class PaymentsService {
         // 600 // 10 minutes in seconds
       );
 
-      this.logger.info(`Processing webhook event: ${event.type}`);
+      this.logger.log(`Processing webhook event: ${event.type}`);
 
       switch (event.type) {
         case 'payment_intent.succeeded':
@@ -489,7 +489,7 @@ export class PaymentsService {
   private async handlePaymentIntentSucceeded(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
-    this.logger.info(`Payment successful for: ${paymentIntent.id}`);
+    this.logger.log(`Payment successful for: ${paymentIntent.id}`);
 
     try {
       // Extract customer and user information
@@ -541,7 +541,7 @@ export class PaymentsService {
         existingPayment.amount = paymentIntent.amount / 100; // Convert from cents
         existingPayment.processedAt = new Date();
         await this.paymentRepository.save(existingPayment);
-        this.logger.info(`Updated payment record: ${existingPayment.id}`);
+        this.logger.log(`Updated payment record: ${existingPayment.id}`);
       } else {
         // Create new payment record
         const payment = this.paymentRepository.create({
@@ -560,7 +560,7 @@ export class PaymentsService {
         });
 
         await this.paymentRepository.save(payment);
-        this.logger.info(`Created payment record: ${payment.id}`);
+        this.logger.log(`Created payment record: ${payment.id}`);
       }
     } catch (error) {
       this.logger.error(
@@ -573,7 +573,7 @@ export class PaymentsService {
   private async handlePaymentIntentFailed(
     paymentIntent: Stripe.PaymentIntent,
   ): Promise<void> {
-    this.logger.info(`Payment failed for: ${paymentIntent.id}`);
+    this.logger.log(`Payment failed for: ${paymentIntent.id}`);
 
     try {
       const customerId =
@@ -625,7 +625,7 @@ export class PaymentsService {
           failureReason: paymentIntent.last_payment_error?.message,
         };
         await this.paymentRepository.save(existingPayment);
-        this.logger.info(`Updated failed payment record: ${existingPayment.id}`);
+        this.logger.log(`Updated failed payment record: ${existingPayment.id}`);
       } else {
         const payment = this.paymentRepository.create({
           stripePaymentIntentId: paymentIntent.id,
@@ -645,7 +645,7 @@ export class PaymentsService {
         });
 
         await this.paymentRepository.save(payment);
-        this.logger.info(`Created failed payment record: ${payment.id}`);
+        this.logger.log(`Created failed payment record: ${payment.id}`);
       }
 
       // TODO: Send failure notification email to customer
@@ -659,7 +659,7 @@ export class PaymentsService {
   private async handleInvoicePaymentSucceeded(
     invoice: Stripe.Invoice,
   ): Promise<void> {
-    this.logger.info(`Invoice payment successful: ${invoice.id}`);
+    this.logger.log(`Invoice payment successful: ${invoice.id}`);
 
     // Process receipt email and billing record
     await this.billingsService.processPaymentReceipt(invoice);
@@ -668,7 +668,7 @@ export class PaymentsService {
   private async handleInvoicePaymentFailed(
     invoice: Stripe.Invoice,
   ): Promise<void> {
-    this.logger.info(`Invoice payment failed: ${invoice.id}`);
+    this.logger.log(`Invoice payment failed: ${invoice.id}`);
 
     // Process payment failure
     await this.billingsService.processPaymentFailure(invoice);
@@ -677,7 +677,7 @@ export class PaymentsService {
   private async handleSubscriptionUpdated(
     subscription: Stripe.Subscription,
   ): Promise<void> {
-    this.logger.info(`Subscription updated: ${subscription.id}`);
+    this.logger.log(`Subscription updated: ${subscription.id}`);
 
     try {
       // Extract customer and subscription information
@@ -769,7 +769,7 @@ export class PaymentsService {
         updateData,
       );
 
-      this.logger.info(
+      this.logger.log(
         `Successfully synced subscription ${existingSubscription.id} with Stripe`,
       );
     } catch (error) {
@@ -783,7 +783,7 @@ export class PaymentsService {
   private async handleSubscriptionDeleted(
     subscription: Stripe.Subscription,
   ): Promise<void> {
-    this.logger.info(`Subscription deleted: ${subscription.id}`);
+    this.logger.log(`Subscription deleted: ${subscription.id}`);
 
     try {
       // Extract user information
@@ -815,7 +815,7 @@ export class PaymentsService {
         isAutoRenew: false,
       });
 
-      this.logger.info(
+      this.logger.log(
         `Successfully marked subscription ${existingSubscription.id} as cancelled`,
       );
     } catch (error) {
@@ -829,7 +829,7 @@ export class PaymentsService {
   private async handleSubscriptionCreated(
     subscription: Stripe.Subscription,
   ): Promise<void> {
-    this.logger.info(`Subscription created: ${subscription.id}`);
+    this.logger.log(`Subscription created: ${subscription.id}`);
 
     try {
       const userId = subscription.metadata?.userId;
@@ -848,14 +848,14 @@ export class PaymentsService {
       );
 
       if (existingSubscription) {
-        this.logger.info(
+        this.logger.log(
           `Subscription ${subscription.id} already exists in database, syncing status`,
         );
         await this.handleSubscriptionUpdated(subscription);
         return;
       }
 
-      this.logger.info(
+      this.logger.log(
         `New subscription ${subscription.id} created via Stripe webhook - consider creating in database if needed`,
       );
     } catch (error) {
@@ -868,7 +868,7 @@ export class PaymentsService {
   private async handleSubscriptionTrialWillEnd(
     subscription: Stripe.Subscription,
   ): Promise<void> {
-    this.logger.info(`Subscription trial ending soon: ${subscription.id}`);
+    this.logger.log(`Subscription trial ending soon: ${subscription.id}`);
 
     try {
       const userId = subscription.metadata?.userId;
@@ -900,7 +900,7 @@ export class PaymentsService {
           )
         : 0;
 
-      this.logger.info(
+      this.logger.log(
         `Trial for subscription ${subscription.id} ends in ${daysUntilEnd} days`,
       );
 

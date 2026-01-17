@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsNotEmpty, IsOptional, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePlanDto {
@@ -22,9 +22,13 @@ export class CreatePlanDto {
     @ApiProperty({
         description: 'Plan price in cents (e.g., 2999 for $29.99)',
         example: 2999,
+        minimum: 1,
+        maximum: 99999999,
     })
     @IsNumber()
     @IsNotEmpty()
+    @Min(1, { message: 'Price must be at least 1 cent' })
+    @Max(99999999, { message: 'Price cannot exceed $999,999.99' })
     price: number;
 
     @ApiProperty({

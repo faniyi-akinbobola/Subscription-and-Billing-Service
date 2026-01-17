@@ -26,9 +26,6 @@ describe('BillingsService', () => {
       providers: [
         BillingsService,
         {
-          provide: `PinoLogger:BillingsService`,
-          useValue: mockPinoLogger,
-        },        {
           provide: EmailService,
           useValue: mockEmailService,
         },

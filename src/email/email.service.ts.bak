@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import * as nodemailer from 'nodemailer';
 
 /**
@@ -75,17 +74,14 @@ export interface RenewalReminderData {
  */
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter;
 
   /**
    * Initialize the email service with SMTP configuration
    * @param configService - NestJS configuration service for environment variables
    */
-  constructor(
-    @InjectPinoLogger(EmailService.name)
-    private readonly logger: PinoLogger,
-    private configService: ConfigService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.initializeTransporter();
   }
 
@@ -130,7 +126,7 @@ export class EmailService {
       };
 
       await this.transporter.sendMail(mailOptions);
-      this.logger.info(
+      this.logger.log(
         `Receipt email sent to ${data.customerEmail} for invoice ${data.invoiceNumber}`,
       );
     } catch (error) {
@@ -152,7 +148,7 @@ export class EmailService {
       };
 
       await this.transporter.sendMail(mailOptions);
-      this.logger.info(
+      this.logger.log(
         `Renewal reminder sent to ${data.customerEmail} for subscription ${data.subscriptionId}`,
       );
     } catch (error) {

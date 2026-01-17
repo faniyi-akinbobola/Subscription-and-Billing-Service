@@ -59,7 +59,7 @@ services:
   # NestJS Application
   app:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile.dev
     container_name: subscription-service
     restart: unless-stopped

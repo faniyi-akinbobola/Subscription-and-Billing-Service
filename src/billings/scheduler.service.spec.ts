@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerService } from './scheduler.service';
 import { BillingsService } from './billings.service';
 import { PaymentsService } from '../payments/payments.service';
+import { PinoLogger } from 'nestjs-pino';
 import Stripe from 'stripe';
 
 // Mock Stripe constructor
@@ -73,10 +74,22 @@ describe('SchedulerService', () => {
     // No need for stripe property since SchedulerService creates its own instance
   };
 
+  const mockPinoLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SchedulerService,
+        {
+          provide: `PinoLogger:SchedulerService`,
+          useValue: mockPinoLogger,
+        },
         {
           provide: BillingsService,
           useValue: mockBillingsService,

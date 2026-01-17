@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { Plan } from './entities/plan.entity';
+import { PinoLogger } from 'nestjs-pino';
 
 const mockRepository = {
   create: jest.fn(),
@@ -11,6 +12,14 @@ const mockRepository = {
   find: jest.fn(),
   findOneBy: jest.fn(),
   remove: jest.fn(),
+};
+
+const mockPinoLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
 };
 
 describe('PlansService', () => {
@@ -21,6 +30,10 @@ describe('PlansService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlansService,
+        {
+          provide: `PinoLogger:PlansService`,
+          useValue: mockPinoLogger,
+        },
         {
           provide: getRepositoryToken(Plan),
           useValue: mockRepository,

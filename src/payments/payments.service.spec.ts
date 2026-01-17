@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { PaymentsService } from './payments.service';
 import { BillingsService } from '../billings/billings.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { UsersService } from '../users/users.service';
+import { Payment } from './entities/payment.entity';
 import { Currency } from './dto/create-payment-intent.dto';
+import { PinoLogger } from 'nestjs-pino';
 import Stripe from 'stripe';
 
 // Mock Stripe constructor
@@ -51,13 +56,53 @@ describe('PaymentsService', () => {
     processPaymentFailure: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockSubscriptionsService = {
+    findOne: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const mockUsersService = {
+    findUserById: jest.fn(),
+  };
+
+  const mockPaymentRepository = {
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+  };
+
+  const mockPinoLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
         {
+          provide: `PinoLogger:PaymentsService`,
+          useValue: mockPinoLogger,
+        },
+        {
+          provide: getRepositoryToken(Payment),
+          useValue: mockPaymentRepository,
+        },
+        {
           provide: BillingsService,
           useValue: mockBillingsService,
+        },
+        {
+          provide: SubscriptionsService,
+          useValue: mockSubscriptionsService,
+        },
+        {
+          provide: UsersService,
+          useValue: mockUsersService,
         },
         {
           provide: 'STRIPE_CONFIG',
@@ -261,6 +306,7 @@ describe('PaymentsService', () => {
         mockWebhookPayload,
         mockWebhookSignature,
         'whsec_test123',
+        undefined,
       );
       expect(billingsService.processPaymentReceipt).toHaveBeenCalledWith(
         mockEvent.data.object,

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { SignupDto } from './dto/signup.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { PinoLogger } from 'nestjs-pino';
 import * as bcrypt from 'bcrypt';
 
 // Mock bcrypt
@@ -40,10 +41,22 @@ describe('AuthService', () => {
     sign: jest.fn(),
   };
 
+  const mockPinoLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        {
+          provide: `PinoLogger:AuthService`,
+          useValue: mockPinoLogger,
+        },
         {
           provide: UsersService,
           useValue: mockUsersService,

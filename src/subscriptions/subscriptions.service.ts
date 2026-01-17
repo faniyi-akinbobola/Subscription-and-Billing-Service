@@ -18,10 +18,13 @@ import { UpdateSubscriptionDto } from './dtos/update-subscription.dto';
 import { FindAllSubscriptionsQuery } from './dtos/find-all-subscriptions-query.dto';
 import { ChangePlanDto } from './dtos/change-plan.dto';
 import { RenewPlanDto } from './dtos/renew-plan.dto';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
+    @InjectPinoLogger(SubscriptionsService.name)
+    private readonly logger: PinoLogger,
     @InjectRepository(Subscription)
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(User)
@@ -39,15 +42,19 @@ export class SubscriptionsService {
     const { userId, planId, startDate, endDate, status, isAutoRenew } =
       createSubscriptionDto;
 
+    this.logger.info(`Creating subscription for user: ${userId}, plan: ${planId}`);
+
     // Validate user exists
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
+      this.logger.warn(`Subscription creation failed - user not found: ${userId}`);
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
     // Validate plan exists
     const plan = await this.planRepository.findOne({ where: { id: planId } });
     if (!plan) {
+      this.logger.warn(`Subscription creation failed - plan not found: ${planId}`);
       throw new NotFoundException(`Plan with ID ${planId} not found`);
     }
 
@@ -61,6 +68,7 @@ export class SubscriptionsService {
       });
 
     if (existingActiveSubscription) {
+      this.logger.warn(`Subscription creation failed - user already has active subscription: ${userId}`);
       throw new ConflictException('User already has an active subscription');
     }
 
@@ -101,7 +109,9 @@ export class SubscriptionsService {
       billingCycle: plan.billingCycle,
     });
 
-    return await this.subscriptionRepository.save(subscription);
+    const savedSubscription = await this.subscriptionRepository.save(subscription);
+    this.logger.info(`Subscription created successfully: ${savedSubscription.id} for user ${userId}`);
+    return savedSubscription;
   }
 
   /**
@@ -156,15 +166,18 @@ export class SubscriptionsService {
    * Find a single subscription by ID
    */
   async findOne(id: string): Promise<Subscription> {
+    this.logger.info(`Fetching subscription: ${id}`);
     const subscription = await this.subscriptionRepository.findOne({
       where: { id },
       relations: ['user', 'plan'],
     });
 
     if (!subscription) {
+      this.logger.warn(`Subscription not found: ${id}`);
       throw new NotFoundException(`Subscription with ID ${id} not found`);
     }
 
+    this.logger.info(`Subscription found: ${id} (user: ${subscription.user.email})`);
     return subscription;
   }
 
@@ -175,6 +188,7 @@ export class SubscriptionsService {
     id: string,
     updateSubscriptionDto: UpdateSubscriptionDto,
   ): Promise<Subscription> {
+    this.logger.info(`Updating subscription: ${id}`, { updates: Object.keys(updateSubscriptionDto) });
     const subscription = await this.findOne(id);
 
     // Apply updates
@@ -190,7 +204,9 @@ export class SubscriptionsService {
       }
     }
 
-    return await this.subscriptionRepository.save(subscription);
+    const updatedSubscription = await this.subscriptionRepository.save(subscription);
+    this.logger.info(`Subscription updated successfully: ${id}`);
+    return updatedSubscription;
   }
 
   /**
@@ -200,6 +216,7 @@ export class SubscriptionsService {
     id: string,
     changePlanDto: ChangePlanDto,
   ): Promise<Subscription> {
+    this.logger.info(`Changing plan for subscription: ${id} to plan: ${changePlanDto.newPlanId}`);
     const subscription = await this.findOne(id);
     const { newPlanId } = changePlanDto;
 
@@ -208,14 +225,17 @@ export class SubscriptionsService {
       where: { id: newPlanId },
     });
     if (!newPlan) {
+      this.logger.warn(`Plan change failed - new plan not found: ${newPlanId}`);
       throw new NotFoundException(`Plan with ID ${newPlanId} not found`);
     }
 
     // Prevent changing to the same plan
     if (subscription.plan.id === newPlanId) {
+      this.logger.warn(`Plan change failed - already using this plan: ${newPlanId}`);
       throw new BadRequestException('Subscription is already using this plan');
     }
 
+    const oldPlanName = subscription.plan.name;
     // Update subscription with new plan
     subscription.plan = newPlan;
     subscription.planChangedAt = new Date();
@@ -226,17 +246,21 @@ export class SubscriptionsService {
       newPlan.billingCycle,
     );
 
-    return await this.subscriptionRepository.save(subscription);
+    const updatedSubscription = await this.subscriptionRepository.save(subscription);
+    this.logger.info(`Plan changed successfully: ${id} from ${oldPlanName} to ${newPlan.name}`);
+    return updatedSubscription;
   }
 
   /**
    * Renew a subscription
    */
   async renew(id: string, renewPlanDto: RenewPlanDto): Promise<Subscription> {
+    this.logger.info(`Renewing subscription: ${id}`);
     const subscription = await this.findOne(id);
 
     // Validate subscription can be renewed
     if (subscription.status === SubscriptionStatus.CANCELLED) {
+      this.logger.warn(`Renewal failed - subscription already cancelled: ${id}`);
       throw new BadRequestException('Cannot renew a cancelled subscription');
     }
 
@@ -252,16 +276,20 @@ export class SubscriptionsService {
     subscription.renewalCount += 1;
     subscription.status = SubscriptionStatus.ACTIVE;
 
-    return await this.subscriptionRepository.save(subscription);
+    const renewedSubscription = await this.subscriptionRepository.save(subscription);
+    this.logger.info(`Subscription renewed successfully: ${id}, new end date: ${newEndDate.toISOString()}`);
+    return renewedSubscription;
   }
 
   /**
    * Cancel a subscription
    */
   async cancel(id: string): Promise<Subscription> {
+    this.logger.info(`Cancelling subscription: ${id}`);
     const subscription = await this.findOne(id);
 
     if (subscription.status === SubscriptionStatus.CANCELLED) {
+      this.logger.warn(`Cancellation failed - already cancelled: ${id}`);
       throw new BadRequestException('Subscription is already cancelled');
     }
 
@@ -269,7 +297,9 @@ export class SubscriptionsService {
     subscription.cancelledAt = new Date();
     subscription.isAutoRenew = false;
 
-    return await this.subscriptionRepository.save(subscription);
+    const cancelledSubscription = await this.subscriptionRepository.save(subscription);
+    this.logger.info(`Subscription cancelled successfully: ${id}`);
+    return cancelledSubscription;
   }
 
   /**

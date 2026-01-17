@@ -1,16 +1,14 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { BillingsService } from './billings.service';
 import Stripe from 'stripe';
 
 @Injectable()
 export class SchedulerService {
+  private readonly logger = new Logger(SchedulerService.name);
   private stripe: Stripe;
 
   constructor(
-    @InjectPinoLogger(SchedulerService.name)
-    private readonly logger: PinoLogger,
     private billingsService: BillingsService,
     @Inject('STRIPE_CONFIG') private stripeConfig: any,
   ) {
@@ -28,11 +26,11 @@ export class SchedulerService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async checkUpcomingRenewals(): Promise<void> {
-    this.logger.info('Starting daily renewal reminder check...');
+    this.logger.log('Starting daily renewal reminder check...');
 
     try {
       await this.billingsService.scheduleRenewalReminders(this.stripe);
-      this.logger.info('Daily renewal reminder check completed');
+      this.logger.log('Daily renewal reminder check completed');
     } catch (error) {
       this.logger.error('Failed to check upcoming renewals:', error);
     }
@@ -44,7 +42,7 @@ export class SchedulerService {
    */
   @Cron('0 9-17 * * 1-5') // Every hour from 9 AM to 5 PM, Monday to Friday
   async checkFailedPayments(): Promise<void> {
-    this.logger.info('Checking for failed payments...');
+    this.logger.log('Checking for failed payments...');
 
     try {
       // Get recent failed invoices
@@ -58,7 +56,7 @@ export class SchedulerService {
 
       for (const invoice of failedInvoices.data) {
         if (invoice.attempt_count > 0) {
-          this.logger.info(
+          this.logger.log(
             `Found failed invoice: ${invoice.id}, attempts: ${invoice.attempt_count}`,
           );
 
@@ -76,7 +74,7 @@ export class SchedulerService {
    */
   @Cron('0 8 * * 1')
   async generateWeeklyBillingSummary(): Promise<void> {
-    this.logger.info('Generating weekly billing summary...');
+    this.logger.log('Generating weekly billing summary...');
 
     try {
       // Get last week's invoices
@@ -99,7 +97,7 @@ export class SchedulerService {
         }
       }
 
-      this.logger.info(`Weekly Summary: 
+      this.logger.log(`Weekly Summary: 
         - Total Revenue: $${(totalRevenue / 100).toFixed(2)}
         - Paid Invoices: ${paidInvoices}
         - Failed Invoices: ${failedInvoices}

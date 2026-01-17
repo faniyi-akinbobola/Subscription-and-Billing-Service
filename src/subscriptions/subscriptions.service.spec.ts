@@ -19,6 +19,7 @@ import { UpdateSubscriptionDto } from './dtos/update-subscription.dto';
 import { FindAllSubscriptionsQuery } from './dtos/find-all-subscriptions-query.dto';
 import { ChangePlanDto } from './dtos/change-plan.dto';
 import { RenewPlanDto } from './dtos/renew-plan.dto';
+import { PinoLogger } from 'nestjs-pino';
 
 const mockSubscriptionRepository = {
   create: jest.fn(),
@@ -36,6 +37,14 @@ const mockUserRepository = {
 
 const mockPlanRepository = {
   findOne: jest.fn(),
+};
+
+const mockPinoLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+  trace: jest.fn(),
 };
 
 describe('SubscriptionsService', () => {
@@ -75,6 +84,10 @@ describe('SubscriptionsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubscriptionsService,
+        {
+          provide: `PinoLogger:SubscriptionsService`,
+          useValue: mockPinoLogger,
+        },
         {
           provide: getRepositoryToken(Subscription),
           useValue: mockSubscriptionRepository,

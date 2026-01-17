@@ -27,7 +27,7 @@ export class UsersController {
     return this.usersService.findAllUsers();
   }
 
-  @Get()
+  @Get('/by-email/:email')
   async findUserByEmail(@Param('email') email: string) {
     const user = await this.usersService.findUserByMail(email);
     if (!user) {
@@ -42,6 +42,7 @@ export class UsersController {
     return this.usersService.findUserById(id);
   }
 
+  @UseGuards(AdminGuard)
   @Post('/create')
   createUser(@Body() body: CreateUserDto) {
     return this.usersService.create({
@@ -51,6 +52,7 @@ export class UsersController {
     });
   }
 
+  @UseGuards(AdminGuard)
   @Patch('/:id')
   updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
     return this.usersService.updateUser(id, body);

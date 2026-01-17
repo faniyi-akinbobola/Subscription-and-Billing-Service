@@ -20,7 +20,7 @@ import { PaymentsService } from './payments.service';
 import {
   CreatePaymentIntentDto,
   ConfirmPaymentIntentDto,
-  CreateSubscriptionDto,
+  CreateStripeSubscriptionDto,
   CreateCustomerDto,
   CreateCheckoutSessionDto,
 } from './dto';
@@ -76,10 +76,10 @@ export class PaymentsController {
     return this.paymentsService.createCheckoutSession(createCheckoutSessionDto);
   }
 
-  // �📅 Subscription Management
+  // 📅 Subscription Management
   @Post('subscriptions')
   async createSubscription(
-    @Body() createSubscriptionDto: CreateSubscriptionDto,
+    @Body() createSubscriptionDto: CreateStripeSubscriptionDto,
   ) {
     return this.paymentsService.createSubscription(createSubscriptionDto);
   }

@@ -1,0 +1,14 @@
+# Development Dockerfile
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy everything including node_modules
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Run build and start - using sh -c to ensure proper command execution
+CMD ["sh", "-c", "npm run build && npm run start:prod"]

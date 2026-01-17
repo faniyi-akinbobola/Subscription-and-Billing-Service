@@ -2,7 +2,7 @@ import { IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Currency } from './create-payment-intent.dto';
 
-export class CreateSubscriptionDto {
+export class CreateStripeSubscriptionDto {
   @ApiProperty({
     description: 'Stripe customer ID',
     example: 'cus_1234567890abcdef',

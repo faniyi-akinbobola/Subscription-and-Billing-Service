@@ -1,10 +1,33 @@
+// Polyfill for crypto.randomUUID in Node 18
+import * as crypto from 'crypto';
+if (typeof (globalThis as any).crypto === 'undefined') {
+  (globalThis as any).crypto = crypto;
+}
+
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
+import morgan from 'morgan';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  // Use Pino logger
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
+  // Add Morgan for HTTP request logging (combined with Pino)
+  const morganMiddleware = morgan('combined', {
+    stream: {
+      write: (message: string) => {
+        logger.log(message.trim());
+      },
+    },
+    skip: (req) => req.url === '/health', // Skip health check logs
+  });
+  app.use(morganMiddleware);
 
   // Enable validation pipes
   app.useGlobalPipes(

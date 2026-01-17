@@ -10,6 +10,7 @@ import {
   Param,
   Req,
   ParseUUIDPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateSubscriptionDto } from './dtos/create-subscription.dto';
@@ -79,8 +80,8 @@ export class SubscriptionsController {
     if (!request.user?.isAdmin) {
       const subscription = await this.subscriptionsService.findOne(id);
       if (subscription.user.id !== request.user?.id) {
-        throw new Error(
-          'Unauthorized: You can only update your own subscriptions',
+        throw new ForbiddenException(
+          'You can only update your own subscriptions',
         );
       }
     }
@@ -97,8 +98,8 @@ export class SubscriptionsController {
     if (!request.user?.isAdmin) {
       const subscription = await this.subscriptionsService.findOne(id);
       if (subscription.user.id !== request.user?.id) {
-        throw new Error(
-          'Unauthorized: You can only change your own subscription plan',
+        throw new ForbiddenException(
+          'You can only change your own subscription plan',
         );
       }
     }
@@ -115,8 +116,8 @@ export class SubscriptionsController {
     if (!request.user?.isAdmin) {
       const subscription = await this.subscriptionsService.findOne(id);
       if (subscription.user.id !== request.user?.id) {
-        throw new Error(
-          'Unauthorized: You can only renew your own subscriptions',
+        throw new ForbiddenException(
+          'You can only renew your own subscriptions',
         );
       }
     }
@@ -129,8 +130,8 @@ export class SubscriptionsController {
     if (!request.user?.isAdmin) {
       const subscription = await this.subscriptionsService.findOne(id);
       if (subscription.user.id !== request.user?.id) {
-        throw new Error(
-          'Unauthorized: You can only cancel your own subscriptions',
+        throw new ForbiddenException(
+          'You can only cancel your own subscriptions',
         );
       }
     }

@@ -40,7 +40,7 @@ export class BillingsService {
   async processPaymentReceipt(invoice: Stripe.Invoice): Promise<void> {
     try {
       if (invoice.status !== 'paid') {
-        this.logger.info(
+        this.logger.log(
           `Invoice ${invoice.id} not paid, skipping receipt email`,
         );
         return;
@@ -163,7 +163,7 @@ export class BillingsService {
       // Send renewal reminder
       await this.emailService.sendRenewalReminderEmail(reminderData);
 
-      this.logger.info(
+      this.logger.log(
         `Renewal reminder sent for subscription ${subscription.id}, renewing in ${daysDiff} days`,
       );
     } catch (error) {
@@ -222,7 +222,7 @@ export class BillingsService {
   async getBillingHistory(customerId: string): Promise<BillingRecord[]> {
     // TODO: Implement database storage and retrieval
     // For now, this would query your database for billing records
-    this.logger.info(`Retrieving billing history for customer ${customerId}`);
+    this.logger.log(`Retrieving billing history for customer ${customerId}`);
     return [];
   }
 
@@ -264,7 +264,7 @@ export class BillingsService {
    * Log billing record (you can extend this to save to database)
    */
   private logBillingRecord(record: BillingRecord): void {
-    this.logger.info(`Billing Record: ${JSON.stringify(record, null, 2)}`);
+    this.logger.log(`Billing Record: ${JSON.stringify(record, null, 2)}`);
 
     // TODO: Save to database
     // Example:

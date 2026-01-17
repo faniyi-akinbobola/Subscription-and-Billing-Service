@@ -1,19 +1,28 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { BillingsModule } from '../billings/billings.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { UsersModule } from '../users/users.module';
 import { stripeConfig } from '../config/stripe.config';
 import { RawBodyMiddleware } from './middleware/raw-body.middleware';
 import { PaymentLoggingMiddleware } from './middleware/payment-logging.middleware';
 import { PaymentCorsMiddleware } from './middleware/payment-cors.middleware';
 import { WebhookVerificationMiddleware } from './middleware/webhook-verification.middleware';
+import { Payment } from './entities/payment.entity';
 
 @Module({
   imports: [
     ConfigModule,
+    PassportModule, // Import PassportModule for JWT authentication
+    TypeOrmModule.forFeature([Payment]),
     BillingsModule,
+    SubscriptionsModule,
+    UsersModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',
