@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaymentThrottlerGuard } from './middleware/payment-throttler.guard';
+import { IdempotencyKey } from './entities/idempotency-key.entity';
+import { IdempotencyInterceptor } from './interceptors/idempotency.interceptor';
 import { Currency } from './dto/create-payment-intent.dto';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
@@ -30,6 +33,20 @@ describe('PaymentsController', () => {
     processWebhookEvent: jest.fn(),
   };
 
+  const mockIdempotencyRepo = {
+    findOne: jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const mockPinoLogger = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+  };
+
   const mockJwtAuthGuard = {
     canActivate: jest.fn(() => true),
   };
@@ -47,12 +64,21 @@ describe('PaymentsController', () => {
           useValue: mockPaymentsService,
         },
         {
+          provide: getRepositoryToken(IdempotencyKey),
+          useValue: mockIdempotencyRepo,
+        },
+        {
+          provide: `PinoLogger:IdempotencyInterceptor`,
+          useValue: mockPinoLogger,
+        },
+        {
           provide: Reflector,
           useValue: {
             get: jest.fn(),
             getAllAndOverride: jest.fn(),
           },
         },
+        IdempotencyInterceptor,
       ],
     })
       .overrideGuard(JwtAuthGuard)

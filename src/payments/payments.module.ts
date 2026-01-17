@@ -13,19 +13,21 @@ import { PaymentLoggingMiddleware } from './middleware/payment-logging.middlewar
 import { PaymentCorsMiddleware } from './middleware/payment-cors.middleware';
 import { WebhookVerificationMiddleware } from './middleware/webhook-verification.middleware';
 import { Payment } from './entities/payment.entity';
+import { IdempotencyKey } from './entities/idempotency-key.entity';
+import { IdempotencyInterceptor } from './interceptors/idempotency.interceptor';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule, // Import PassportModule for JWT authentication
-    TypeOrmModule.forFeature([Payment]),
+    TypeOrmModule.forFeature([Payment, IdempotencyKey]),
     BillingsModule,
     SubscriptionsModule,
     UsersModule,
     // ThrottlerModule removed - now configured globally in AppModule
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, stripeConfig],
+  providers: [PaymentsService, stripeConfig, IdempotencyInterceptor],
   exports: [PaymentsService],
 })
 export class PaymentsModule {

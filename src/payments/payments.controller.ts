@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
   Patch,
   Delete,
   Headers,
@@ -16,6 +17,7 @@ import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaymentThrottlerGuard } from './middleware/payment-throttler.guard';
+import { IdempotencyInterceptor } from './interceptors/idempotency.interceptor';
 import { PaymentsService } from './payments.service';
 import {
   CreatePaymentIntentDto,
@@ -32,6 +34,7 @@ export class PaymentsController {
 
   // 💳 Customer Management
   @Post('customers')
+  @UseInterceptors(IdempotencyInterceptor)
   @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 per minute
   async createCustomer(@Body() createCustomerDto: CreateCustomerDto) {
     return this.paymentsService.createCustomer(createCustomerDto);
@@ -44,6 +47,7 @@ export class PaymentsController {
 
   // 🎯 Payment Intent Management
   @Post('payment-intents')
+  @UseInterceptors(IdempotencyInterceptor) // Prevent duplicate payments
   @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 per minute for payment creation
   async createPaymentIntent(
     @Body() createPaymentIntentDto: CreatePaymentIntentDto,
@@ -52,6 +56,7 @@ export class PaymentsController {
   }
 
   @Post('payment-intents/:id/confirm')
+  @UseInterceptors(IdempotencyInterceptor) // Prevent duplicate confirmations
   async confirmPaymentIntent(
     @Param('id') paymentIntentId: string,
     @Body() confirmPaymentIntentDto: ConfirmPaymentIntentDto,
@@ -67,8 +72,9 @@ export class PaymentsController {
     return this.paymentsService.getPaymentIntent(paymentIntentId);
   }
 
-  // � Checkout Session Management (with return URLs)
+  // 🛒 Checkout Session Management (with return URLs)
   @Post('checkout-sessions')
+  @UseInterceptors(IdempotencyInterceptor) // Prevent duplicate checkout sessions
   @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 per minute
   async createCheckoutSession(
     @Body() createCheckoutSessionDto: CreateCheckoutSessionDto,
@@ -78,6 +84,7 @@ export class PaymentsController {
 
   // 📅 Subscription Management
   @Post('subscriptions')
+  @UseInterceptors(IdempotencyInterceptor) // Prevent duplicate subscriptions
   async createSubscription(
     @Body() createSubscriptionDto: CreateStripeSubscriptionDto,
   ) {
