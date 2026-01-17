@@ -2,9 +2,12 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { Plan } from './entities/plan.entity';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 
@@ -15,6 +18,8 @@ export class PlansService {
     private readonly logger: PinoLogger,
     @InjectRepository(Plan)
     private readonly plansRepository: Repository<Plan>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
   async createPlan(planData: {
@@ -35,6 +40,10 @@ export class PlansService {
 
     const newPlan = this.plansRepository.create(planData);
     const savedPlan = await this.plansRepository.save(newPlan);
+    
+    // Invalidate all plans cache
+    await this.invalidatePlansCache();
+    
     this.logger.info(`Plan created successfully: ${savedPlan.id} (${name})`);
     return savedPlan;
   }
@@ -83,6 +92,10 @@ export class PlansService {
     }
     Object.assign(plan, updateData);
     const updatedPlan = await this.plansRepository.save(plan);
+    
+    // Invalidate cache after update
+    await this.invalidatePlansCache();
+    
     this.logger.info(`Plan updated successfully: ${id} (${plan.name})`);
     return updatedPlan;
   }
@@ -95,6 +108,10 @@ export class PlansService {
       throw new NotFoundException(`Plan with ID ${id} not found.`);
     }
     await this.plansRepository.remove(plan);
+    
+    // Invalidate cache after deletion
+    await this.invalidatePlansCache();
+    
     this.logger.info(`Plan deleted successfully: ${id} (${plan.name})`);
   }
 
@@ -107,6 +124,10 @@ export class PlansService {
     }
     plan.isActive = false;
     const deactivatedPlan = await this.plansRepository.save(plan);
+    
+    // Invalidate cache after deactivation
+    await this.invalidatePlansCache();
+    
     this.logger.info(`Plan deactivated successfully: ${id} (${plan.name})`);
     return deactivatedPlan;
   }
@@ -120,7 +141,25 @@ export class PlansService {
     }
     plan.isActive = true;
     const activatedPlan = await this.plansRepository.save(plan);
+    
+    // Invalidate cache after activation
+    await this.invalidatePlansCache();
+    
     this.logger.info(`Plan activated successfully: ${id} (${plan.name})`);
     return activatedPlan;
+  }
+
+  /**
+   * Invalidate all plans-related cache entries
+   * Called after create, update, delete, activate, or deactivate operations
+   */
+  private async invalidatePlansCache(): Promise<void> {
+    try {
+      // Clear all plan-related cache keys
+      await this.cacheManager.del('/plans');
+      this.logger.info('Plans cache invalidated successfully');
+    } catch (error) {
+      this.logger.error('Failed to invalidate plans cache', error);
+    }
   }
 }

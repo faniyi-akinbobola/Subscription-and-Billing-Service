@@ -2,9 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { User } from './entities/user.entity';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 // import { CreateUserDto } from './dtos/create-user.dto';
@@ -16,6 +19,8 @@ export class UsersService {
     private readonly logger: PinoLogger,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @Inject(CACHE_MANAGER)
+    private cacheManager: Cache,
   ) {}
 
   async findAllUsers(): Promise<Partial<User>[]> {
@@ -93,6 +98,10 @@ export class UsersService {
     }
     Object.assign(user, body);
     await this.usersRepository.save(user);
+    
+    // Invalidate user cache after update
+    await this.invalidateUserCache(id);
+    
     this.logger.info(`User updated successfully: ${id}`);
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
@@ -109,9 +118,26 @@ export class UsersService {
     // Preserve user data before deletion (remove() strips the id)
     const { password, ...userWithoutPassword } = { ...user };
     await this.usersRepository.remove(user);
+    
+    // Invalidate user cache after deletion
+    await this.invalidateUserCache(id);
+    
     this.logger.info(
       `User deleted successfully: ${id} (${userWithoutPassword.email})`,
     );
     return userWithoutPassword;
+  }
+
+  /**
+   * Invalidate user cache entry
+   * Called after update or delete operations
+   */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    try {
+      await this.cacheManager.del(`/users/${userId}`);
+      this.logger.info(`User cache invalidated for: ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to invalidate user cache for: ${userId}`, error);
+    }
   }
 }

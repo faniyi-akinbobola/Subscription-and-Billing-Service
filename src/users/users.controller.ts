@@ -8,8 +8,10 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
   NotFoundException,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
@@ -38,6 +40,8 @@ export class UsersController {
 
   @UseGuards(AdminGuard)
   @Get('/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(180) // Cache for 3 minutes (user data changes moderately)
   findUserById(@Param('id') id: string) {
     return this.usersService.findUserById(id);
   }

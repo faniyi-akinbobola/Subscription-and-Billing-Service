@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
+import type { RedisClientOptions } from 'redis';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -15,6 +18,21 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    // Redis Cache Configuration
+    CacheModule.registerAsync<RedisClientOptions>({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        store: redisStore as any,
+        socket: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: configService.get<number>('REDIS_PORT', 6379),
+        },
+        ttl: 300, // Default TTL: 5 minutes (in seconds)
+        max: 100, // Maximum number of items in cache
+      }),
+      inject: [ConfigService],
     }),
     LoggerModule.forRoot({
       pinoHttp: {

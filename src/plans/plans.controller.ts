@@ -1,6 +1,7 @@
 import {
   Controller,
   UseGuards,
+  UseInterceptors,
   Get,
   Post,
   Delete,
@@ -9,6 +10,7 @@ import {
   Query,
   Param,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { PlansService } from './plans.service';
@@ -27,16 +29,22 @@ export class PlansController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600) // Cache for 10 minutes (plans rarely change)
   getAllPlans() {
     return this.plansService.getAllPlans();
   }
 
   @Get('/name')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600) // Cache for 10 minutes
   getPlanByName(@Query('name') name: string) {
     return this.plansService.getPlanByName(name);
   }
 
   @Get('/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600) // Cache for 10 minutes
   getPlanById(@Param('id') id: string) {
     return this.plansService.getPlanById(id);
   }

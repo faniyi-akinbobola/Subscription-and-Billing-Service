@@ -1,6 +1,7 @@
 import {
   Controller,
   UseGuards,
+  UseInterceptors,
   Post,
   Get,
   Patch,
@@ -12,6 +13,7 @@ import {
   ParseUUIDPipe,
   ForbiddenException,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateSubscriptionDto } from './dtos/create-subscription.dto';
 import { UserSubscribeDto } from './dtos/user-subscribe.dto';
@@ -66,6 +68,8 @@ export class SubscriptionsController {
 
   @UseGuards(AdminGuard)
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(120) // Cache for 2 minutes (subscriptions change moderately)
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.subscriptionsService.findOne(id);
   }

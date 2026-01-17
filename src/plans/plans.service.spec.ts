@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { PlansService } from './plans.service';
 import { Plan } from './entities/plan.entity';
 import { PinoLogger } from 'nestjs-pino';
@@ -22,6 +23,13 @@ const mockPinoLogger = {
   trace: jest.fn(),
 };
 
+const mockCacheManager = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  reset: jest.fn(),
+};
+
 describe('PlansService', () => {
   let service: PlansService;
   let repository: Repository<Plan>;
@@ -37,6 +45,10 @@ describe('PlansService', () => {
         {
           provide: getRepositoryToken(Plan),
           useValue: mockRepository,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
         },
       ],
     }).compile();
