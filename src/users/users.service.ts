@@ -28,7 +28,7 @@ export class UsersService {
     this.logger.info(`Found ${users.length} users`);
     // Remove passwords from response
     return users.map(({ password, ...user }) => user);
-  }  
+  }
 
   async findUserById(id: string): Promise<Partial<User>> {
     this.logger.info(`Fetching user by ID: ${id}`);
@@ -109,7 +109,9 @@ export class UsersService {
     // Preserve user data before deletion (remove() strips the id)
     const { password, ...userWithoutPassword } = { ...user };
     await this.usersRepository.remove(user);
-    this.logger.info(`User deleted successfully: ${id} (${userWithoutPassword.email})`);
+    this.logger.info(
+      `User deleted successfully: ${id} (${userWithoutPassword.email})`,
+    );
     return userWithoutPassword;
   }
 }

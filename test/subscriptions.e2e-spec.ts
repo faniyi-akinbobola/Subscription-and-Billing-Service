@@ -12,40 +12,32 @@ describe('Subscriptions (e2e)', () => {
 
   beforeAll(async () => {
     // Create admin user
-    await request(baseUrl)
-      .post('/auth/signup')
-      .send({
-        email: adminEmail,
-        password: 'Admin123!@#',
-        admin: true,
-      });
+    await request(baseUrl).post('/auth/signup').send({
+      email: adminEmail,
+      password: 'Admin123!@#',
+      admin: true,
+    });
 
     // Sign in as admin
-    const adminRes = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: adminEmail,
-        password: 'Admin123!@#',
-      });
+    const adminRes = await request(baseUrl).post('/auth/signin').send({
+      email: adminEmail,
+      password: 'Admin123!@#',
+    });
     adminToken = adminRes.body.access_token;
 
     // Create regular user
-    const signupRes = await request(baseUrl)
-      .post('/auth/signup')
-      .send({
-        email: userEmail,
-        password: 'User123!@#',
-        admin: false,
-      });
+    const signupRes = await request(baseUrl).post('/auth/signup').send({
+      email: userEmail,
+      password: 'User123!@#',
+      admin: false,
+    });
     userId = signupRes.body.user.id;
 
     // Sign in as user
-    const userRes = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: userEmail,
-        password: 'User123!@#',
-      });
+    const userRes = await request(baseUrl).post('/auth/signin').send({
+      email: userEmail,
+      password: 'User123!@#',
+    });
     userToken = userRes.body.access_token;
 
     // Create a plan
@@ -162,9 +154,7 @@ describe('Subscriptions (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(baseUrl)
-        .get('/subscriptions/me')
-        .expect(401);
+      return request(baseUrl).get('/subscriptions/me').expect(401);
     });
   });
 

@@ -7,12 +7,14 @@ Your Stripe webhook handlers have been fully implemented to sync all Stripe even
 ### 📦 **Updates Made:**
 
 #### 1. **PaymentsModule** (`src/payments/payments.module.ts`)
+
 - ✅ Added `TypeOrmModule.forFeature([Payment])` for payment entity support
 - ✅ Imported `SubscriptionsModule` for subscription sync
 - ✅ Imported `UsersModule` for user lookup
 - ✅ All dependencies properly wired
 
 #### 2. **PaymentsService** (`src/payments/payments.service.ts`)
+
 - ✅ Injected `PaymentRepository` for payment tracking
 - ✅ Injected `SubscriptionsService` for subscription sync
 - ✅ Injected `UsersService` for user lookup
@@ -20,7 +22,9 @@ Your Stripe webhook handlers have been fully implemented to sync all Stripe even
 ### 🔧 **Webhook Handlers Implemented:**
 
 #### ✅ **1. Payment Intent Succeeded** (`payment_intent.succeeded`)
+
 **What it does:**
+
 - ✅ Creates/updates Payment record in database
 - ✅ Tracks payment status, amount, and metadata
 - ✅ Links payment to user via userId in metadata
@@ -29,6 +33,7 @@ Your Stripe webhook handlers have been fully implemented to sync all Stripe even
 - ✅ Handles both one-time and subscription payments
 
 **Database Impact:**
+
 ```sql
 INSERT INTO payments (
   stripe_payment_intent_id,
@@ -45,13 +50,16 @@ INSERT INTO payments (
 ---
 
 #### ✅ **2. Payment Intent Failed** (`payment_intent.payment_failed`)
+
 **What it does:**
+
 - ✅ Creates/updates Payment record with FAILED status
 - ✅ Stores failure reason in metadata
 - ✅ Logs failure for investigation
 - ✅ Ready for failure notification emails (TODO commented)
 
 **Database Impact:**
+
 ```sql
 INSERT INTO payments (
   status = 'failed',
@@ -62,43 +70,54 @@ INSERT INTO payments (
 ---
 
 #### ✅ **3. Invoice Payment Succeeded** (`invoice.payment_succeeded`)
+
 **What it does:**
+
 - ✅ Sends receipt email to customer
 - ✅ Creates billing record
 - ✅ Already working before (kept as-is)
 
 **Actions:**
+
 - Calls `billingsService.processPaymentReceipt()`
 - Emails customer with invoice details
 
 ---
 
 #### ✅ **4. Invoice Payment Failed** (`invoice.payment_failed`)
+
 **What it does:**
+
 - ✅ Processes payment failure
 - ✅ Logs billing record
 - ✅ Already working before (kept as-is)
 
 **Actions:**
+
 - Calls `billingsService.processPaymentFailure()`
 
 ---
 
 #### ✅ **5. Subscription Created** (`customer.subscription.created`) - NEW!
+
 **What it does:**
+
 - ✅ Detects new subscriptions created via Stripe
 - ✅ Checks if subscription already exists in database
 - ✅ Logs for tracking purposes
 - ✅ Calls update handler to sync if exists
 
 **Notes:**
+
 - Most subscriptions should be created via your API first
 - This catches edge cases where subscriptions are created directly in Stripe
 
 ---
 
 #### ✅ **6. Subscription Updated** (`customer.subscription.updated`)
+
 **What it does:**
+
 - ✅ **FULLY SYNCS** Stripe subscription with local database
 - ✅ Maps Stripe statuses to local statuses:
   - `active` → `ACTIVE`
@@ -111,9 +130,10 @@ INSERT INTO payments (
 - ✅ Finds subscription by `paymentReference` (Stripe subscription ID)
 
 **Database Impact:**
+
 ```sql
 UPDATE subscriptions
-SET 
+SET
   status = 'active',
   start_date = '...',
   end_date = '...',
@@ -125,16 +145,19 @@ WHERE payment_reference = 'sub_xxx'
 ---
 
 #### ✅ **7. Subscription Deleted** (`customer.subscription.deleted`)
+
 **What it does:**
+
 - ✅ Marks local subscription as CANCELLED
 - ✅ Disables auto-renew
 - ✅ Preserves subscription history
 - ✅ Syncs cancellation with database
 
 **Database Impact:**
+
 ```sql
 UPDATE subscriptions
-SET 
+SET
   status = 'cancelled',
   is_auto_renew = false
 WHERE payment_reference = 'sub_xxx'
@@ -143,13 +166,16 @@ WHERE payment_reference = 'sub_xxx'
 ---
 
 #### ✅ **8. Trial Will End** (`customer.subscription.trial_will_end`) - NEW!
+
 **What it does:**
+
 - ✅ Detects when trials are ending (3 days before)
 - ✅ Calculates days until trial end
 - ✅ Logs for tracking
 - ✅ Ready for trial ending email notification
 
 **Notes:**
+
 - Perfect place to send "Your trial ends in 3 days" emails
 - Can be enhanced with email service integration
 
@@ -160,46 +186,51 @@ WHERE payment_reference = 'sub_xxx'
 For webhooks to work properly, **YOU MUST include `userId` in metadata** when creating Stripe resources:
 
 ### ✅ **When Creating Customers:**
+
 ```typescript
 const customer = await stripe.customers.create({
   email: 'user@example.com',
   metadata: {
-    userId: user.id  // ← CRITICAL!
-  }
+    userId: user.id, // ← CRITICAL!
+  },
 });
 ```
 
 ### ✅ **When Creating Payment Intents:**
+
 ```typescript
 const paymentIntent = await stripe.paymentIntents.create({
   amount: 5000,
   currency: 'usd',
   customer: customerId,
   metadata: {
-    userId: user.id,  // ← CRITICAL!
-    subscriptionId: 'optional'
-  }
+    userId: user.id, // ← CRITICAL!
+    subscriptionId: 'optional',
+  },
 });
 ```
 
 ### ✅ **When Creating Subscriptions:**
+
 ```typescript
 const subscription = await stripe.subscriptions.create({
   customer: customerId,
   items: [{ price: priceId }],
   metadata: {
-    userId: user.id  // ← CRITICAL!
-  }
+    userId: user.id, // ← CRITICAL!
+  },
 });
 ```
 
 ### ✅ **When Updating Subscriptions in Your Database:**
+
 Make sure to store the Stripe subscription ID in `paymentReference` field:
+
 ```typescript
 await subscriptionsService.create({
   userId: user.id,
   planId: plan.id,
-  paymentReference: stripeSubscription.id  // ← CRITICAL!
+  paymentReference: stripeSubscription.id, // ← CRITICAL!
 });
 ```
 
@@ -208,6 +239,7 @@ await subscriptionsService.create({
 ## 🧪 **How to Test Webhooks Locally**
 
 ### 1. **Install Stripe CLI:**
+
 ```bash
 # macOS
 brew install stripe/stripe-cli/stripe
@@ -217,6 +249,7 @@ stripe login
 ```
 
 ### 2. **Forward Webhooks to Your Local Server:**
+
 ```bash
 # Start your NestJS app
 npm run start:dev
@@ -226,16 +259,19 @@ stripe listen --forward-to localhost:3000/payments/webhooks
 ```
 
 You'll see output like:
+
 ```
 > Ready! Your webhook signing secret is whsec_xxxxx
 ```
 
 ### 3. **Update Your .env File:**
+
 ```bash
 STRIPE_WEBHOOK_SECRET=whsec_xxxxx  # Use the secret from stripe listen
 ```
 
 ### 4. **Trigger Test Events:**
+
 ```bash
 # Test payment success
 stripe trigger payment_intent.succeeded
@@ -251,7 +287,9 @@ stripe trigger customer.subscription.trial_will_end
 ```
 
 ### 5. **Watch Your Logs:**
+
 Your NestJS console will show:
+
 ```
 [PaymentsService] Processing webhook event: payment_intent.succeeded
 [PaymentsService] Payment successful for: pi_xxx
@@ -283,6 +321,7 @@ Make sure your `payments` table has these columns:
 ```
 
 Make sure your `subscriptions` table has:
+
 ```typescript
 - paymentReference: string  // Stores Stripe subscription ID
 ```
@@ -328,23 +367,27 @@ Make sure your `subscriptions` table has:
 ## 🎉 **What You Now Have:**
 
 ✅ **Complete Stripe-to-Database Synchronization**
+
 - All payments tracked in database
 - All subscription status changes synced
 - Failed payments logged
 - Trial endings detected
 
 ✅ **Robust Error Handling**
+
 - Graceful failures (webhooks always return 200)
 - Detailed logging for debugging
 - Fallback user lookup by email
 
 ✅ **Production-Ready**
+
 - Signature verification
 - Idempotency (checks for existing records)
 - Type-safe implementations
 - Comprehensive event coverage
 
 ✅ **Extensible**
+
 - Easy to add more webhook events
 - Ready for email notifications
 - Prepared for analytics integration
@@ -379,19 +422,25 @@ Make sure your `subscriptions` table has:
 ## 🆘 **Troubleshooting:**
 
 ### Issue: "No userId in metadata"
+
 **Solution:** Always include `userId` in metadata when creating Stripe resources.
 
 ### Issue: "Local subscription not found"
+
 **Solution:** Ensure `paymentReference` field stores Stripe subscription ID.
 
 ### Issue: "Webhook signature verification failed"
-**Solution:** 
+
+**Solution:**
+
 - Check `STRIPE_WEBHOOK_SECRET` in .env
 - Ensure raw body middleware is working
 - Verify endpoint URL matches Stripe dashboard
 
 ### Issue: "User not found"
-**Solution:** 
+
+**Solution:**
+
 - Ensure user exists in database before creating payments
 - Include valid email in Stripe customer/payment intent
 

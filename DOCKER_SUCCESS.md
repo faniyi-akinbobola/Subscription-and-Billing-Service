@@ -6,11 +6,11 @@ Your **Subscription & Billing Service** is now **fully containerized** and runni
 
 ### 🐳 Running Containers
 
-| Container | Status | Port | Purpose |
-|-----------|--------|------|---------|
-| **subscription-service** | ✅ Running | 3000 | NestJS Application |
+| Container                 | Status     | Port | Purpose             |
+| ------------------------- | ---------- | ---- | ------------------- |
+| **subscription-service**  | ✅ Running | 3000 | NestJS Application  |
 | **subscription-postgres** | ✅ Healthy | 5432 | PostgreSQL Database |
-| **subscription-redis** | ✅ Healthy | 6379 | Redis Cache |
+| **subscription-redis**    | ✅ Healthy | 6379 | Redis Cache         |
 
 ---
 
@@ -25,8 +25,10 @@ Your **Subscription & Billing Service** is now **fully containerized** and runni
 ## 📋 Key Fixes Applied
 
 ### 1. **Crypto Polyfill Added** ✅
+
 **Problem**: Node 18 Alpine didn't have `crypto.randomUUID()` available globally  
 **Solution**: Added polyfill in `src/main.ts`:
+
 ```typescript
 import * as crypto from 'crypto';
 if (typeof (globalThis as any).crypto === 'undefined') {
@@ -35,21 +37,27 @@ if (typeof (globalThis as any).crypto === 'undefined') {
 ```
 
 ### 2. **Build Output Path Fixed** ✅
+
 **Problem**: NestJS builds to `dist/src/main.js` but start script pointed to `dist/main`  
 **Solution**: Updated `package.json`:
+
 ```json
 "start:prod": "node dist/src/main"
 ```
 
 ### 3. **Docker Compose Optimized** ✅
+
 **Changes**:
+
 - Used existing `postgres:15` image (not alpine variant)
 - Removed source code volume mounts (production build)
 - Kept only logs volume for persistence
 - Simplified to essential services only
 
 ### 4. **Environment Configuration** ✅
+
 **Updated `.env`**:
+
 ```env
 DB_HOST=postgres  # Docker container name
 ```
@@ -59,21 +67,25 @@ DB_HOST=postgres  # Docker container name
 ## 🎯 Docker Commands
 
 ### Start All Services
+
 ```bash
 docker-compose -f docker-compose.essential.yml up -d
 ```
 
 ### Stop All Services
+
 ```bash
 docker-compose -f docker-compose.essential.yml down
 ```
 
 ### Rebuild and Restart
+
 ```bash
 docker-compose -f docker-compose.essential.yml up -d --build
 ```
 
 ### View Logs
+
 ```bash
 # All services
 docker-compose -f docker-compose.essential.yml logs -f
@@ -85,6 +97,7 @@ docker logs subscription-redis -f
 ```
 
 ### Check Status
+
 ```bash
 docker ps
 docker-compose -f docker-compose.essential.yml ps
@@ -109,18 +122,21 @@ Subscription-and-Billing-Service/
 ## 🔧 Technical Details
 
 ### Build Process
+
 1. **Copy all files** including `node_modules` into container
 2. **Run `npm run build`** - compiles TypeScript to `dist/src/`
 3. **Run `npm run start:prod`** - starts compiled JS application
 4. **Crypto polyfill** loads before any modules
 
 ### Docker Network
+
 - **Network**: `subscription-network` (bridge)
 - **DNS Resolution**: Services communicate via container names
   - App → Database: `postgres:5432`
   - App → Redis: `redis:6379`
 
 ### Data Persistence
+
 - **PostgreSQL**: `postgres_data` volume
 - **Redis**: `redis_data` volume
 - **Logs**: `./logs` mounted folder
@@ -130,6 +146,7 @@ Subscription-and-Billing-Service/
 ## 🧪 Quick API Test
 
 ### 1. Create a User
+
 ```bash
 curl -X POST http://localhost:3000/auth/signup \
   -H "Content-Type: application/json" \
@@ -140,6 +157,7 @@ curl -X POST http://localhost:3000/auth/signup \
 ```
 
 ### 2. Sign In
+
 ```bash
 curl -X POST http://localhost:3000/auth/signin \
   -H "Content-Type: application/json" \
@@ -150,6 +168,7 @@ curl -X POST http://localhost:3000/auth/signin \
 ```
 
 ### 3. Check Health
+
 ```bash
 curl http://localhost:3000
 ```
@@ -159,20 +178,24 @@ curl http://localhost:3000
 ## 🔄 Development vs Production
 
 ### Current Setup (docker-compose.essential.yml)
+
 - **Mode**: Production build in container
 - **Hot Reload**: ❌ No (rebuild required for changes)
 - **Pros**: Stable, production-like environment
 - **Cons**: Slower development iteration
 
 ### For Active Development
+
 If you need hot reload for rapid development:
 
 1. **Run databases in Docker**:
+
 ```bash
 docker-compose -f docker-compose.essential.yml up -d postgres redis
 ```
 
 2. **Run app locally**:
+
 ```bash
 # Update .env
 DB_HOST=localhost
@@ -182,6 +205,7 @@ npm run start:dev
 ```
 
 This gives you:
+
 - ✅ Fast hot reload
 - ✅ Containerized databases
 - ✅ Easy debugging
@@ -191,16 +215,19 @@ This gives you:
 ## 🎓 What We Learned
 
 ### Network Issues
+
 - Your Docker had DNS resolution problems (`lookup auth.docker.io`)
 - **Workaround**: Used locally cached images
 - **Solution for future**: Fix Docker Desktop network settings
 
 ### Node 18 Alpine Issues
+
 - `crypto.randomUUID()` not available in global scope
 - Common issue with TypeORM in Alpine containers
 - **Solution**: Import and polyfill crypto module
 
 ### NestJS Build Structure
+
 - Source in `src/`, builds to `dist/src/`
 - Must match `start:prod` script path
 - `nest-cli.json` sourceRoot determines structure
@@ -228,7 +255,7 @@ Your app is production-ready! Here's what's complete:
 
 ## 🚨 Known Minor Issues (Non-Critical)
 
-1. **Duplicate DTO Warning**: 
+1. **Duplicate DTO Warning**:
    - Message: "CreateSubscriptionDto defined multiple times"
    - Impact: None (will be error in next major version)
    - Fix: Rename one of the DTOs when convenient
@@ -248,17 +275,18 @@ Your app is production-ready! Here's what's complete:
 ✅ **Redis connected and healthy**  
 ✅ **API responding on port 3000**  
 ✅ **Swagger documentation accessible**  
-✅ **All routes mapped correctly**  
+✅ **All routes mapped correctly**
 
 ---
 
 ## 📞 Next Steps
 
 1. **Test Stripe Integration**:
+
    ```bash
    # Install Stripe CLI
    brew install stripe/stripe-cli/stripe
-   
+
    # Forward webhooks
    stripe listen --forward-to localhost:3000/payments/webhooks
    ```
@@ -279,4 +307,4 @@ Your app is production-ready! Here's what's complete:
 
 **🎊 Congratulations! Your Subscription & Billing Service is fully Dockerized!**
 
-*All services are running smoothly in containers. You can now develop, test, and deploy with confidence!*
+_All services are running smoothly in containers. You can now develop, test, and deploy with confidence!_

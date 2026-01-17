@@ -1,11 +1,11 @@
 /**
  * WEBHOOK HELPER METHODS - EXAMPLES
- * 
+ *
  * These are example methods showing how to enhance your PaymentsService
  * to ensure metadata (especially userId) is always included for webhook sync.
- * 
+ *
  * Copy these methods into your PaymentsService class and customize as needed.
- * 
+ *
  * This file is for reference only and contains commented examples.
  */
 
@@ -175,4 +175,3 @@ IMPORTANT NOTES:
 */
 
 export {}; // Make this a module to avoid TS errors
-

@@ -21,12 +21,10 @@ describe('Users (e2e)', () => {
       });
     adminUserId = adminSignup.body.user.id;
 
-    const adminSignin = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: adminSignup.body.user.email,
-        password: 'AdminPass123!',
-      });
+    const adminSignin = await request(baseUrl).post('/auth/signin').send({
+      email: adminSignup.body.user.email,
+      password: 'AdminPass123!',
+    });
     adminToken = adminSignin.body.access_token;
 
     // Create regular user without admin flag
@@ -40,12 +38,10 @@ describe('Users (e2e)', () => {
       });
     regularUserId = userSignup.body.user.id;
 
-    const userSignin = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: userSignup.body.user.email,
-        password: 'UserPass123!',
-      });
+    const userSignin = await request(baseUrl).post('/auth/signin').send({
+      email: userSignup.body.user.email,
+      password: 'UserPass123!',
+    });
     userToken = userSignin.body.access_token;
   });
 
@@ -84,7 +80,7 @@ describe('Users (e2e)', () => {
 
     it('should fail with duplicate email', async () => {
       const duplicateEmail = `duplicate-${Date.now()}@example.com`;
-      
+
       // Create first user
       await request(baseUrl)
         .post('/users/create')
@@ -171,9 +167,7 @@ describe('Users (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(baseUrl)
-        .get('/users')
-        .expect(401);
+      return request(baseUrl).get('/users').expect(401);
     });
   });
 
@@ -212,9 +206,7 @@ describe('Users (e2e)', () => {
     });
 
     it('should fail without authentication', () => {
-      return request(baseUrl)
-        .get(`/users/${regularUserId}`)
-        .expect(401);
+      return request(baseUrl).get(`/users/${regularUserId}`).expect(401);
     });
   });
 
@@ -367,7 +359,10 @@ describe('Users (e2e)', () => {
       await request(baseUrl).get('/users').expect(401);
       await request(baseUrl).get(`/users/${regularUserId}`).expect(401);
       await request(baseUrl).post('/users/create').send({}).expect(401);
-      await request(baseUrl).patch(`/users/${regularUserId}`).send({}).expect(401);
+      await request(baseUrl)
+        .patch(`/users/${regularUserId}`)
+        .send({})
+        .expect(401);
       await request(baseUrl).delete(`/users/${regularUserId}`).expect(401);
     });
 

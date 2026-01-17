@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
@@ -625,7 +621,9 @@ export class PaymentsService {
           failureReason: paymentIntent.last_payment_error?.message,
         };
         await this.paymentRepository.save(existingPayment);
-        this.logger.info(`Updated failed payment record: ${existingPayment.id}`);
+        this.logger.info(
+          `Updated failed payment record: ${existingPayment.id}`,
+        );
       } else {
         const payment = this.paymentRepository.create({
           stripePaymentIntentId: paymentIntent.id,
@@ -896,7 +894,8 @@ export class PaymentsService {
       // Send trial ending reminder (3 days before)
       const daysUntilEnd = subscription.trial_end
         ? Math.ceil(
-            (subscription.trial_end * 1000 - Date.now()) / (1000 * 60 * 60 * 24),
+            (subscription.trial_end * 1000 - Date.now()) /
+              (1000 * 60 * 60 * 24),
           )
         : 0;
 

@@ -10,15 +10,29 @@ describe('UsersService', () => {
   let service: UsersService;
   let userRepository: Repository<User>;
 
-  const mockUser: User = {
+  // Factory function to create fresh mock users
+  const createMockUser = (): User => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
     email: 'test@example.com',
     password: 'hashed_password',
     tokenVersion: 0,
     admin: false,
     subscriptions: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-01-17T11:48:59.468Z'),
+    updatedAt: new Date('2026-01-17T11:48:59.468Z'),
+  });
+
+  const mockUser = createMockUser();
+
+  // Expected user without password (what service returns)
+  const mockUserWithoutPassword = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    email: 'test@example.com',
+    tokenVersion: 0,
+    admin: false,
+    subscriptions: [],
+    createdAt: mockUser.createdAt,
+    updatedAt: mockUser.updatedAt,
   };
 
   const mockUserRepository = {
@@ -73,7 +87,7 @@ describe('UsersService', () => {
       const result = await service.findAllUsers();
 
       expect(mockUserRepository.find).toHaveBeenCalled();
-      expect(result).toEqual(users);
+      expect(result).toEqual([mockUserWithoutPassword]);
     });
 
     it('should throw NotFoundException when no users found', async () => {
@@ -93,7 +107,7 @@ describe('UsersService', () => {
       const result = await service.findUserById(userId);
 
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(mockUserWithoutPassword);
     });
 
     it('should throw NotFoundException when user not found by id', async () => {
@@ -151,7 +165,7 @@ describe('UsersService', () => {
         admin: false,
       });
       expect(mockUserRepository.save).toHaveBeenCalledWith(mockUser);
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(mockUserWithoutPassword);
     });
 
     it('should create a user with admin flag when provided', async () => {
@@ -213,6 +227,7 @@ describe('UsersService', () => {
       const userId = '123e4567-e89b-12d3-a456-426614174000';
       const updateData = { email: 'updated@example.com', admin: true };
       const updatedUser = { ...mockUser, ...updateData };
+      const updatedUserWithoutPassword = { ...mockUserWithoutPassword, ...updateData };
 
       mockUserRepository.findOneBy.mockResolvedValue(mockUser);
       mockUserRepository.save.mockResolvedValue(updatedUser);
@@ -221,7 +236,7 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
       expect(mockUserRepository.save).toHaveBeenCalled();
-      expect(result).toEqual(updatedUser);
+      expect(result).toEqual(updatedUserWithoutPassword);
     });
 
     it('should throw NotFoundException when user to update not found', async () => {
@@ -241,15 +256,17 @@ describe('UsersService', () => {
   describe('deleteUser', () => {
     it('should delete a user successfully', async () => {
       const userId = '123e4567-e89b-12d3-a456-426614174000';
+      // Create a fresh copy to avoid mutations from previous tests
+      const userToDelete = createMockUser();
 
-      mockUserRepository.findOneBy.mockResolvedValue(mockUser);
-      mockUserRepository.remove.mockResolvedValue(mockUser);
+      mockUserRepository.findOneBy.mockResolvedValue(userToDelete);
+      mockUserRepository.remove.mockResolvedValue(userToDelete);
 
       const result = await service.deleteUser(userId);
 
       expect(mockUserRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
-      expect(mockUserRepository.remove).toHaveBeenCalledWith(mockUser);
-      expect(result).toEqual(mockUser);
+      expect(mockUserRepository.remove).toHaveBeenCalledWith(userToDelete);
+      expect(result).toEqual(mockUserWithoutPassword);
     });
 
     it('should throw NotFoundException when user to delete not found', async () => {

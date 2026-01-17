@@ -96,7 +96,9 @@ export class AuthService {
     this.logger.info(`User signout initiated: ${userId}`);
     // Increment token version to invalidate all existing JWTs
     await this.usersService.incrementTokenVersion(userId);
-    this.logger.info(`User signed out successfully (all tokens invalidated): ${userId}`);
+    this.logger.info(
+      `User signed out successfully (all tokens invalidated): ${userId}`,
+    );
 
     return { message: 'Successfully signed out' };
   }
@@ -106,13 +108,17 @@ export class AuthService {
     const user = await this.usersService.findUserById(payload.sub);
 
     if (!user) {
-      this.logger.warn(`JWT validation failed - user not found: ${payload.sub}`);
+      this.logger.warn(
+        `JWT validation failed - user not found: ${payload.sub}`,
+      );
       return null;
     }
 
     // Check if token version matches (for instant JWT invalidation)
     if (user.tokenVersion !== payload.tokenVersion) {
-      this.logger.warn(`JWT validation failed - token version mismatch for user: ${payload.sub}`);
+      this.logger.warn(
+        `JWT validation failed - token version mismatch for user: ${payload.sub}`,
+      );
       return null;
     }
 

@@ -297,7 +297,7 @@ describe('SubscriptionsController', () => {
       await expect(
         controller.update('subscription-1', updateSubscriptionDto, mockRequest),
       ).rejects.toThrow(
-        'Unauthorized: You can only update your own subscriptions',
+        'You can only update your own subscriptions',
       );
     });
   });
@@ -380,7 +380,7 @@ describe('SubscriptionsController', () => {
       await expect(
         controller.changePlan('subscription-1', changePlanDto, mockRequest),
       ).rejects.toThrow(
-        'Unauthorized: You can only change your own subscription plan',
+        'You can only change your own subscription plan',
       );
     });
   });
@@ -451,7 +451,7 @@ describe('SubscriptionsController', () => {
       await expect(
         controller.renewPlan('subscription-1', renewPlanDto, mockRequest),
       ).rejects.toThrow(
-        'Unauthorized: You can only renew your own subscriptions',
+        'You can only renew your own subscriptions',
       );
     });
   });
@@ -520,7 +520,7 @@ describe('SubscriptionsController', () => {
       await expect(
         controller.cancel('subscription-1', mockRequest),
       ).rejects.toThrow(
-        'Unauthorized: You can only cancel your own subscriptions',
+        'You can only cancel your own subscriptions',
       );
     });
   });

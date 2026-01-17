@@ -20,12 +20,10 @@ describe('Payments (e2e)', () => {
       });
     userId = signup.body.user.id;
 
-    const signin = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: signup.body.user.email,
-        password: 'PaymentTest123!',
-      });
+    const signin = await request(baseUrl).post('/auth/signin').send({
+      email: signup.body.user.email,
+      password: 'PaymentTest123!',
+    });
     authToken = signin.body.access_token;
   });
 
@@ -212,7 +210,9 @@ describe('Payments (e2e)', () => {
           expect(Array.isArray(res.body.data)).toBe(true);
           expect(res.body.data.length).toBeGreaterThan(0);
           // Check if our created price is in the list
-          const createdPrice = res.body.data.find((p: any) => p.id === testPriceId);
+          const createdPrice = res.body.data.find(
+            (p: any) => p.id === testPriceId,
+          );
           expect(createdPrice).toBeDefined();
         });
     });
@@ -329,9 +329,7 @@ describe('Payments (e2e)', () => {
     });
 
     it('should fail without authentication', () => {
-      return request(baseUrl)
-        .get('/payments/invoices')
-        .expect(401);
+      return request(baseUrl).get('/payments/invoices').expect(401);
     });
   });
 

@@ -10,39 +10,31 @@ describe('Plans (e2e)', () => {
 
   beforeAll(async () => {
     // Create admin user
-    await request(baseUrl)
-      .post('/auth/signup')
-      .send({
-        email: adminEmail,
-        password: 'Admin123!@#',
-        admin: true,
-      });
+    await request(baseUrl).post('/auth/signup').send({
+      email: adminEmail,
+      password: 'Admin123!@#',
+      admin: true,
+    });
 
     // Sign in as admin
-    const adminRes = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: adminEmail,
-        password: 'Admin123!@#',
-      });
+    const adminRes = await request(baseUrl).post('/auth/signin').send({
+      email: adminEmail,
+      password: 'Admin123!@#',
+    });
     adminToken = adminRes.body.access_token;
 
     // Create regular user
-    await request(baseUrl)
-      .post('/auth/signup')
-      .send({
-        email: userEmail,
-        password: 'User123!@#',
-        admin: false,
-      });
+    await request(baseUrl).post('/auth/signup').send({
+      email: userEmail,
+      password: 'User123!@#',
+      admin: false,
+    });
 
     // Sign in as user
-    const userRes = await request(baseUrl)
-      .post('/auth/signin')
-      .send({
-        email: userEmail,
-        password: 'User123!@#',
-      });
+    const userRes = await request(baseUrl).post('/auth/signin').send({
+      email: userEmail,
+      password: 'User123!@#',
+    });
     userToken = userRes.body.access_token;
   });
 
@@ -165,7 +157,10 @@ describe('Plans (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('price', 3999);
-          expect(res.body).toHaveProperty('description', 'Updated E2E Test Plan');
+          expect(res.body).toHaveProperty(
+            'description',
+            'Updated E2E Test Plan',
+          );
         });
     });
 

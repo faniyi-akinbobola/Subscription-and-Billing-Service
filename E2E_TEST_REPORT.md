@@ -7,6 +7,7 @@
 **Skipped**: 3 tests (documented known issues)
 
 ### Test Results
+
 ```
 Test Suites: 4 passed, 4 total
 Tests:       3 skipped, 43 passed, 46 total
@@ -16,10 +17,12 @@ Time:        ~1.5s
 ## 🧪 Test Coverage
 
 ### 1. Application Health (`app.e2e-spec.ts`)
+
 - ✅ Health check endpoint
 - **Tests**: 1/1 passing
 
 ### 2. Authentication (`auth.e2e-spec.ts`)
+
 - ✅ User signup (success, duplicate email, invalid email, weak password)
 - ✅ User signin (success, wrong password, non-existent user)
 - ✅ Get profile (success, no token, invalid token)
@@ -27,6 +30,7 @@ Time:        ~1.5s
 - **Tests**: 14/14 passing
 
 ### 3. Plans Management (`plans.e2e-spec.ts`)
+
 - ✅ Create plan (admin success, user forbidden, duplicate name, invalid price)
 - ✅ Get all plans (requires JWT authentication)
 - ✅ Get plan by ID (success, invalid UUID)
@@ -35,6 +39,7 @@ Time:        ~1.5s
 - **Tests**: 13/13 passing
 
 ### 4. Subscriptions (`subscriptions.e2e-spec.ts`)
+
 - ✅ Create subscription (admin success, user forbidden, invalid userId, invalid planId)
 - ✅ Get all subscriptions (admin with pagination, user forbidden)
 - ✅ Get user's own subscriptions
@@ -48,7 +53,9 @@ Time:        ~1.5s
 ## 🐛 Known Issues
 
 ### Subscription Relations Issue
+
 **Affected Tests**:
+
 - `PATCH /subscriptions/:id` - Update subscription
 - `PATCH /subscriptions/:id/cancel` - Cancel subscription (first call)
 - `PATCH /subscriptions/:id/cancel` - Cancel already cancelled subscription
@@ -62,6 +69,7 @@ Time:        ~1.5s
 **Workaround**: These operations work correctly when tested manually via API requests, suggesting a test environment issue rather than a production code issue.
 
 **Status**: Documented and skipped in test suite. Needs investigation into:
+
 1. Entity relation loading in test environment
 2. Subscription service update/cancel methods
 3. Proper test data setup
@@ -69,18 +77,22 @@ Time:        ~1.5s
 ## 🔧 Test Infrastructure
 
 ### Docker-Based Testing
+
 All tests run against live Docker containers:
+
 - **Application**: NestJS app on port 3000
 - **Database**: PostgreSQL
 - **Cache**: Redis
 
 ### Test Automation
+
 ```bash
 # Run all e2e tests with Docker
 npm run test:e2e:docker
 ```
 
 The test script automatically:
+
 1. Starts Docker containers
 2. Waits for health check (30 attempts, 2s intervals)
 3. Runs all e2e test suites
@@ -88,6 +100,7 @@ The test script automatically:
 5. Returns appropriate exit codes for CI/CD
 
 ### Test Structure
+
 - **Setup**: Creates admin and user accounts in `beforeAll`
 - **Isolation**: Each test module creates its own test data
 - **Cleanup**: Tests are designed to be idempotent
@@ -96,17 +109,20 @@ The test script automatically:
 ## 📝 Test Scenarios Covered
 
 ### Authentication Flow
+
 1. New user registration with validation
 2. Login with credentials
 3. Profile access with JWT
 4. Token invalidation on signout
 
 ### Authorization
+
 1. Admin-only endpoints (Plans CRUD, Subscriptions admin)
 2. User endpoints (own subscriptions)
 3. Public endpoints (health check)
 
 ### Data Validation
+
 1. Email format validation
 2. Password strength validation
 3. UUID format validation
@@ -114,6 +130,7 @@ The test script automatically:
 5. Business logic validation (duplicate checks)
 
 ### Error Handling
+
 1. 400 Bad Request for validation errors
 2. 401 Unauthorized for missing/invalid tokens
 3. 403 Forbidden for insufficient permissions
@@ -150,6 +167,7 @@ The test script automatically:
 ## ✅ Conclusions
 
 The e2e test suite successfully validates:
+
 - ✅ All core authentication flows
 - ✅ All plan management operations
 - ✅ Most subscription operations (15/18)

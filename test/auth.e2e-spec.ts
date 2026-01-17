@@ -113,9 +113,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(baseUrl)
-        .get('/auth/profile')
-        .expect(401);
+      return request(baseUrl).get('/auth/profile').expect(401);
     });
 
     it('should fail with invalid token', () => {
