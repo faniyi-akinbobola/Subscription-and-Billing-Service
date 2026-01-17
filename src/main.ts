@@ -98,15 +98,6 @@ async function bootstrap() {
     },
   });
 
-  // Health check endpoint
-  app.getHttpAdapter().get('/health', (req, res) => {
-    res.json({
-      status: 'OK',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    });
-  });
-
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 

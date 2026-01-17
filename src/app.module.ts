@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { redisStore } from 'cache-manager-redis-store';
 import type { RedisClientOptions } from 'redis';
 import { AppController } from './app.controller';
@@ -34,6 +36,24 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
       }),
       inject: [ConfigService],
     }),
+    // Global Rate Limiting Configuration
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000, // 1 second
+        limit: 3, // 3 requests per second (prevents rapid-fire attacks)
+      },
+      {
+        name: 'medium',
+        ttl: 60000, // 1 minute
+        limit: 20, // 20 requests per minute (prevents brute force)
+      },
+      {
+        name: 'long',
+        ttl: 900000, // 15 minutes
+        limit: 100, // 100 requests per 15 minutes (prevents sustained abuse)
+      },
+    ]),
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
@@ -88,6 +108,13 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     SubscriptionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Apply ThrottlerGuard globally to all routes
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

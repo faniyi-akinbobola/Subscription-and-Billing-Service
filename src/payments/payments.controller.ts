@@ -12,7 +12,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaymentThrottlerGuard } from './middleware/payment-throttler.guard';
@@ -156,6 +156,7 @@ export class PaymentsController {
 
   // 🔐 Webhook Endpoint
   @Post('webhooks')
+  @SkipThrottle() // Webhooks must not be rate limited (Stripe requires reliable delivery)
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Req() request: Request,

@@ -1,7 +1,6 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
@@ -23,18 +22,7 @@ import { Payment } from './entities/payment.entity';
     BillingsModule,
     SubscriptionsModule,
     UsersModule,
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 60000, // 1 minute
-        limit: 10, // 10 requests per minute per user
-      },
-      {
-        name: 'medium',
-        ttl: 900000, // 15 minutes
-        limit: 100, // 100 requests per 15 minutes
-      },
-    ]),
+    // ThrottlerModule removed - now configured globally in AppModule
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, stripeConfig],
